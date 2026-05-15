@@ -3,9 +3,11 @@ import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
+import commentingRoutes from './src/modules/commenting/commenting.routes';
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
+export const PROJECT_ID = process.env.PROJECT_ID
 
 const app = express();
 
@@ -28,7 +30,11 @@ app.use(compression());
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/',(req,res) => {
+// const apiRouter = express.Router();
+// apiRouter.use('/', commentingRoutes);
+app.use('/api', commentingRoutes);
+
+app.get('/',(req,res) => {
     res.json({message: "The backend is running."})
 })
 
