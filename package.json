@@ -1,0 +1,20 @@
+{
+  "name": "sac_commenting",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/vineet-k09/sac_commenting#readme",
+  "bugs": {
+    "url": "https://github.com/vineet-k09/sac_commenting/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vineet-k09/sac_commenting.git"
+  },
+  "license": "ISC",
+  "author": "vineet, chidrupee",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev:server": "cd server && npm run dev"
+  }
+}
