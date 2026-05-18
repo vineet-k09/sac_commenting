@@ -19,7 +19,7 @@ export const FiltersSection = styled.div`
   margin-bottom: 32px;
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #999;
   background: #f9f9f9;
 
   @media (prefers-color-scheme: dark) {
@@ -66,7 +66,7 @@ export const FilterLabel = styled.label`
 export const FilterValue = styled.div`
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #999;
   background: #ffffff;
   color: #0b0c0d;
   font-size: 14px;
@@ -100,7 +100,7 @@ export const CommentForm = styled.div`
 export const Input = styled.input`
   padding: 12px 14px;
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #999;
   background: #ffffff;
   color: #0b0c0d;
   font-size: 14px;
@@ -131,7 +131,7 @@ export const CommentTextArea = styled.textarea`
   min-height: 120px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #999;
   background: #ffffff;
   color: #0b0c0d;
   font-size: 14px;
@@ -196,7 +196,7 @@ export const CommentsList = styled.div`
 export const CommentCard = styled.div`
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #999;
   background: #ffffff;
   box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.15);
 
@@ -252,7 +252,7 @@ export const EmptyState = styled.div`
   color: #999;
   font-size: 14px;
   border-radius: 12px;
-  border: 1px dashed #e0e0e0;
+  border: 1px dashed #999;
   background: #f9f9f9;
 
   @media (prefers-color-scheme: dark) {

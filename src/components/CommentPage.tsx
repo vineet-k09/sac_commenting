@@ -49,12 +49,8 @@ function CommentPage() {
     
     // Sort keys to ensure the string is deterministic regardless of message order
     const sortedKeys = keys.sort();
-    const sortedFilters = sortedKeys.reduce((acc, key) => {
-      acc[key] = filters[key];
-      return acc;
-    }, {} as Record<string, string>);
     
-    return JSON.stringify(sortedFilters);
+    return sortedKeys.map(key => `${key}:${filters[key]}`).join(';');
   };
 
   // Fetch comments from API
