@@ -8,6 +8,12 @@ export async function handleCreateComment(data: any){
 }
 
 export async function handleGetComments(){
-    const res = await getComments();
-    return res;
+    // const res = await getComments();
+    return dummy_comments;
 }
+
+export const dummy_comments = [
+    {user: "Alice", comment: "This is a great article!", filter: "positive"},
+    {user: "Bob", comment: "I disagree with the points made here.", filter: "negative"},
+    {user: "Charlie", comment: "Can you provide more details?", filter: "neutral"},
+]

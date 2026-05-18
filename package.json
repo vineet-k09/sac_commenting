@@ -15,6 +15,14 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev:server": "cd server && npm run dev"
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "dev": "concurrently -n server,client -c red,cyan \"npm run dev:server\" \"npm run dev:client\"",
+    "build:client": "tsc -b && vite build",
+    "lint:client": "eslint .",
+    "preview:client": "vite preview"
+  },
+  "dependencies": {
+    "concurrently": "^9.2.1"
   }
 }

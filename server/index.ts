@@ -6,9 +6,6 @@ import dotenv from 'dotenv';
 import commentingRoutes from './src/modules/commenting/commenting.routes';
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
-export const PROJECT_ID = process.env.PROJECT_ID
-
 const app = express();
 
 app.use(helmet());
@@ -37,6 +34,9 @@ app.use('/api', commentingRoutes);
 app.get('/',(req,res) => {
     res.json({message: "The backend is running."})
 })
+
+const PORT = process.env.PORT || 3000;
+export var PROJECT_ID = process.env.PROJECT_ID;
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

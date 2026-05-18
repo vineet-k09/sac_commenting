@@ -31,6 +31,7 @@ type Comment = {
 };
 
 const API_BASE_URL = '/api/comment';
+const API_BASE_URL2 = '/api/getAll';
 
 function CommentPage() {
   const [user, setUser] = useState('');
@@ -40,7 +41,10 @@ function CommentPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Generic filters state
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string>>({
+    "apple": "red",
+    "banana": "yellow"
+  }); // dummy filter for demo
 
   // Generate stable filter string from filter combination
   const getFilterString = () => {
@@ -56,7 +60,8 @@ function CommentPage() {
   // Fetch comments from API
   const fetchComments = async (filterString: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL}?filter=${encodeURIComponent(filterString)}`);
+      const response = await fetch(`${API_BASE_URL2}`);
+      // const response = await fetch(`${API_BASE_URL}?filter=${encodeURIComponent(filterString)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
