@@ -2,8 +2,8 @@ import { getComments, createComment } from "./commenting.repo";
 
 export async function handleCreateComment(data: any){
     const { user, comment, filter } = data;
-    // all of them seperate :string
-    const res = await createComment(user, comment, filter);
+    // all of them seperate :string validation, length validation, filter validation, etc.
+    const res = await createComment(user, comment, filter); // 
     return res;
 }
 

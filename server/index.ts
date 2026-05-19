@@ -4,36 +4,49 @@ import cors from 'cors';
 import compression from 'compression';
 import dotenv from 'dotenv';
 import commentingRoutes from './src/modules/commenting/commenting.routes';
+import path from 'path';
 dotenv.config();
 
-const app = express();
+const app = express(); // returns express app instance - like returning a new instance of a class
 
-app.use(helmet());
+app.use(helmet()); // Security headers
 
-app.disable('x-powered-by');
+app.disable('x-powered-by'); // Hide Express signature
 
-// CORS
+// CORS -> Cross Origin Resource Sharing zyx.com/api/
 app.use(
   cors({
-    origin: true,
+    origin: true, // Allow only these origins    
     credentials: true,
   })
 );
 
 // Compression
-app.use(compression());
+app.use(compression()); 
 
 // Body parsers
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true })); // %20 
 
-// const apiRouter = express.Router();
-// apiRouter.use('/', commentingRoutes);
-app.use('/api', commentingRoutes);
+const apiRouter = express.Router();
+apiRouter.use('/', commentingRoutes); // /api/comment/add , /api/comment/getAll, etc.
+// apiRouter.use('/', commentingRoutes); // /api/user/add , /api/comment/fetch, etc. 404, 405
+app.use('/api', apiRouter);
 
-app.get('/',(req,res) => {
-    res.json({message: "The backend is running."})
-})
+// Serve static client files from dist/
+const distPath = path.resolve(__dirname, 'dist');
+app.use(express.static(distPath));
+
+// API fallback handled above. For any other GET request, serve index.html (SPA)
+app.get('/', (req, res) => {
+  const indexFile = path.join(distPath, 'index.html');
+  res.sendFile(indexFile, (err) => {
+    console.error('Error sending index.html:', err);
+    if (err) {
+      res.status(500).json({ message: 'The backend is running.' });
+    }
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 export var PROJECT_ID = process.env.PROJECT_ID;
