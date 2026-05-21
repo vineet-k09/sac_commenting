@@ -36,11 +36,12 @@ export async function createComment(user: string, comment: string, filter: strin
     return { id };
 }
 
-export async function getComments(){
-    const results = await bq.query(
-        `SELECT * FROM ${COMMENT_TABLE}
-        ORDER BY created_at DESC
-        LIMIT 1000`
-    );
+export async function getComments(filter?: string){
+    let query = `SELECT * FROM ${COMMENT_TABLE}`;
+    if (filter) {
+        query += ` WHERE filter = @filter`;
+    }
+    query += ` ORDER BY created_at DESC LIMIT 1000`;
+    const results = await bq.query(query, filter ? { filter } : undefined);
     return results.data;
 }

@@ -16,7 +16,8 @@ export async function createComment(req: any, res: Response) {
 
 export async function getComments(req: any, res: Response) {
     try {
-        const result = await handleGetComments();
+        const filter = req.query?.filter || undefined;
+        const result = await handleGetComments(filter);
         console.log("Received get comments request", result);
         res.status(200).json(result);
     } catch (error: any) {

@@ -31,7 +31,6 @@ type Comment = {
 };
 
 const API_BASE_URL = '/api/comment';
-const API_BASE_URL2 = '/api/getAll';
 
 function CommentPage() {
   const [user, setUser] = useState('');
@@ -60,8 +59,7 @@ function CommentPage() {
   // Fetch comments from API
   const fetchComments = async (filterString: string) => {
     try {
-      const response = await fetch(`${API_BASE_URL2}`);
-      // const response = await fetch(`${API_BASE_URL}?filter=${encodeURIComponent(filterString)}`);
+      const response = await fetch(`${API_BASE_URL}?filter=${encodeURIComponent(filterString)}`);
       
       if (!response.ok) {
         throw new Error('Failed to fetch comments');
