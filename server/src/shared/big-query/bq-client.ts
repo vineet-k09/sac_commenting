@@ -9,7 +9,7 @@ export interface QueryResult<T = unknown> {
 }
 
 export class BigQueryClient { // stateful
-  private readonly bigquery: BigQuery;
+  private readonly bigquery: InstanceType<typeof BigQuery>;
 
   constructor(
     private readonly projectId?: string,
@@ -31,9 +31,9 @@ export class BigQueryClient { // stateful
     this.bigquery = new BigQuery(options);
 
     // Optional: test connection
-    // this.bigquery.getDatasets() // client(*) ->(**) server ->(1*) -> bigquery SSE (10 mil, 10 mil statefull)
-    //   .then(() => console.log("Connected to BigQuery"))
-    //   .catch(err => console.error(" BigQuery connection failed:", err));
+    this.bigquery.getDatasets() // client(*) ->(**) server ->(1*) -> bigquery SSE (10 mil, 10 mil statefull)
+      .then(() => console.log("Connected to BigQuery"))
+      .catch(err => console.error(" BigQuery connection failed:", err));
   }
 
   async query<T = unknown>(

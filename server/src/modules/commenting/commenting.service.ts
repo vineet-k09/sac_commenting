@@ -8,8 +8,8 @@ export async function handleCreateComment(data: any){
 }
 
 export async function handleGetComments(){
-    // const res = await getComments();
-    return dummy_comments;
+    const res = await getComments();
+    return res;
 }
 
 export const dummy_comments = [

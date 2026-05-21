@@ -9,7 +9,18 @@ dotenv.config();
 
 const app = express(); // returns express app instance - like returning a new instance of a class
 
-app.use(helmet()); // Security headers
+app.use(
+  helmet({
+    frameguard: false, // Disables X-Frame-Options: SAMEORIGIN
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        // Allow the app to be embedded. Replace "*" with your specific SAP domain for better security.
+        "frame-ancestors": ["'self'", "*"],
+      },
+    },
+  })
+); // Security headers
 
 app.disable('x-powered-by'); // Hide Express signature
 

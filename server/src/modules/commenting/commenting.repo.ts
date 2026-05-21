@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { BigQueryClient } from "../../shared/big-query/bq-client";
 import { PROJECT_ID } from "../../..";
 
-const DB_NAME = "sac_commenting";
+const DB_NAME = "vfgrp_sac_commenting";
 const COMMENT_TABLE = `${PROJECT_ID}.${DB_NAME}.comments`
 
 const bq = new BigQueryClient();
