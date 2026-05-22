@@ -1,271 +1,210 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 
 export const Container = styled.div`
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px;
+  padding: 24px;
   overflow-y: auto;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
-  background: ${({ theme }) => theme.bg};
-  color: ${({ theme }) => theme.text};
-  transition: all 0.3s ease;
 `;
 
-export const HeaderRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-`;
-
-export const PageTitle = styled.h1`
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.textTitle};
-`;
-
-export const ThemeToggle = styled.button`
-  background: ${({ theme }) => theme.toggleBg};
-  color: ${({ theme }) => theme.toggleText};
-  border: none;
-  border-radius: 20px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    opacity: 0.8;
-  }
-`;
-
-export const TabsContainer = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  border-bottom: 2px solid ${({ theme }) => theme.border};
-`;
-
-export const Tab = styled.button<{ $active?: boolean }>`
-  background: transparent;
-  border: none;
-  padding: 8px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: ${({ theme, $active }) => ($active ? theme.primary : theme.textSecondary)};
-  border-bottom: 3px solid ${({ theme, $active }) => ($active ? theme.primary : 'transparent')};
-  margin-bottom: -2px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: ${({ theme }) => theme.primary};
-  }
-`;
-
-// Filters
 export const FiltersSection = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.cardBg};
+  gap: 16px;
+  margin-bottom: 32px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #999;
+  background: #f9f9f9;
+
+  @media (prefers-color-scheme: dark) {
+    border-color: #2a2a2a;
+    background: #151515;
+  }
 `;
 
 export const FiltersSectionTitle = styled.h2`
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 0 0 12px;
+  font-size: 18px;
   font-weight: 600;
-  color: ${({ theme }) => theme.textTitle};
+  color: #0b0c0d;
+
+  @media (prefers-color-scheme: dark) {
+    color: #f5f5f5;
+  }
 `;
 
 export const FiltersGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
 `;
 
 export const FilterItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 `;
 
 export const FilterLabel = styled.label`
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: ${({ theme }) => theme.textSecondary};
+  color: #666;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+
+  @media (prefers-color-scheme: dark) {
+    color: #b3b3b3;
+  }
 `;
 
 export const FilterValue = styled.div`
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #999;
+  background: #ffffff;
+  color: #0b0c0d;
+  font-size: 14px;
   font-weight: 500;
+
+  @media (prefers-color-scheme: dark) {
+    border-color: #2a2a2a;
+    background: #1a1a1a;
+    color: #f5f5f5;
+  }
 `;
 
-// Form
+export const PageTitle = styled.h1`
+  margin: 0 0 24px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #0b0c0d;
+
+  @media (prefers-color-scheme: dark) {
+    color: #f5f5f5;
+  }
+`;
+
 export const CommentForm = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 `;
 
 export const Input = styled.input`
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #999;
+  background: #ffffff;
+  color: #0b0c0d;
+  font-size: 14px;
   font-family: system-ui, -apple-system, sans-serif;
 
   &:focus {
-    outline: 2px solid ${({ theme }) => theme.primary};
+    outline: 2px solid #00b0ca;
     outline-offset: 2px;
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.textSecondary};
+    color: #999;
+    opacity: 0.8;
   }
-`;
 
-export const Select = styled.select`
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  font-family: system-ui, -apple-system, sans-serif;
+  @media (prefers-color-scheme: dark) {
+    border-color: #2a2a2a;
+    background: #1a1a1a;
+    color: #f5f5f5;
 
-  &:focus {
-    outline: 2px solid ${({ theme }) => theme.primary};
-    outline-offset: 2px;
+    &::placeholder {
+      color: #666;
+    }
   }
 `;
 
 export const CommentTextArea = styled.textarea`
-  min-height: 80px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
+  min-height: 120px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #999;
+  background: #ffffff;
+  color: #0b0c0d;
+  font-size: 14px;
   line-height: 1.5;
   font-family: system-ui, -apple-system, sans-serif;
   resize: vertical;
 
   &:focus {
-    outline: 2px solid ${({ theme }) => theme.primary};
+    outline: 2px solid #00b0ca;
     outline-offset: 2px;
   }
 
   &::placeholder {
-    color: ${({ theme }) => theme.textSecondary};
+    color: #999;
+    opacity: 0.8;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    border-color: #2a2a2a;
+    background: #1a1a1a;
+    color: #f5f5f5;
+
+    &::placeholder {
+      color: #666;
+    }
   }
 `;
 
-export const FormActions = styled.div`
-  display: flex;
-  gap: 10px;
-  align-items: center;
-`;
-
 export const AddButton = styled.button`
-  padding: 8px 16px;
-  border-radius: 6px;
+  align-self: flex-start;
+  padding: 12px 24px;
+  border-radius: 8px;
   border: none;
-  background: ${({ theme }) => theme.primary};
+  background: #00b0ca;
   color: #ffffff;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: background 140ms ease;
 
   &:hover:not(:disabled) {
-    opacity: 0.9;
+    background: #5c68b2;
   }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-`;
 
-export const AiRegenerateButton = styled.button`
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.primary};
-  background: transparent;
-  color: ${({ theme }) => theme.primary};
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 140ms ease;
-
-  &:hover {
-    background: ${({ theme }) => theme.primary}20;
+  &:focus {
+    outline: 2px solid #00b0ca;
+    outline-offset: 2px;
   }
 `;
 
-export const AiSuggestionsContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
-  padding: 10px;
-  border-radius: 6px;
-  background: ${({ theme }) => theme.cardBg};
-  border: 1px solid ${({ theme }) => theme.border};
-`;
-
-export const AiSuggestionItem = styled.button`
-  text-align: left;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: ${({ theme }) => theme.inputBg};
-  color: ${({ theme }) => theme.text};
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 140ms ease;
-
-  &:hover {
-    border-color: ${({ theme }) => theme.primary};
-    background: ${({ theme }) => theme.primary}10;
-  }
-`;
-
-// Comments List
 export const CommentsList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 `;
 
 export const CommentCard = styled.div`
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.cardBg};
-  box-shadow: 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #999;
+  background: #ffffff;
+  box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.15);
+
+  @media (prefers-color-scheme: dark) {
+    border-color: #2a2a2a;
+    background: #111111;
+    box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.4);
+  }
 `;
 
 export const CommentHeader = styled.div`
@@ -276,134 +215,61 @@ export const CommentHeader = styled.div`
 `;
 
 export const CommentUser = styled.span`
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  color: ${({ theme }) => theme.primary};
+  color: #00b0ca;
+
+  @media (prefers-color-scheme: dark) {
+    color: #00b0ca;
+  }
 `;
 
 export const CommentDate = styled.span`
-  font-size: 11px;
-  color: ${({ theme }) => theme.textSecondary};
+  font-size: 12px;
+  color: #999;
+
+  @media (prefers-color-scheme: dark) {
+    color: #b3b3b3;
+  }
 `;
 
-export const CommentText = styled.div`
+export const CommentText = styled.p`
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: ${({ theme }) => theme.text};
+  font-size: 14px;
+  line-height: 1.6;
+  color: #2f3133;
   white-space: pre-wrap;
   word-break: break-word;
-`;
 
-export const EditButton = styled.button`
-  background: transparent;
-  border: none;
-  color: ${({ theme }) => theme.textSecondary};
-  font-size: 12px;
-  cursor: pointer;
-  margin-left: 8px;
-  
-  &:hover {
-    text-decoration: underline;
-    color: ${({ theme }) => theme.primary};
-  }
-`;
-
-// Interactive Comment Types
-export const ChecklistContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-`;
-
-export const ChecklistItem = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  input[type="checkbox"] {
-    accent-color: ${({ theme }) => theme.primary};
-    width: 14px;
-    height: 14px;
-    cursor: pointer;
-  }
-  
-  label {
-    font-size: 13px;
-    color: ${({ theme }) => theme.text};
-  }
-`;
-
-export const PollContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-`;
-
-export const PollOption = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  input[type="radio"] {
-    accent-color: ${({ theme }) => theme.primary};
-    width: 14px;
-    height: 14px;
-    cursor: pointer;
-  }
-  
-  label {
-    font-size: 13px;
-    color: ${({ theme }) => theme.text};
-  }
-`;
-
-export const InteractiveCreator = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 10px;
-  background: ${({ theme }) => theme.cardBg};
-  border: 1px dashed ${({ theme }) => theme.border};
-  border-radius: 6px;
-`;
-
-export const AddOptionButton = styled.button`
-  align-self: flex-start;
-  background: transparent;
-  border: none;
-  color: ${({ theme }) => theme.primary};
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 4px 0;
-  
-  &:hover {
-    text-decoration: underline;
+  @media (prefers-color-scheme: dark) {
+    color: #b3b3b3;
   }
 `;
 
 export const EmptyState = styled.div`
-  padding: 32px 16px;
+  padding: 48px 24px;
   text-align: center;
-  color: ${({ theme }) => theme.textSecondary};
-  font-size: 13px;
-  border-radius: 8px;
-  border: 1px dashed ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.cardBg};
+  color: #999;
+  font-size: 14px;
+  border-radius: 12px;
+  border: 1px dashed #999;
+  background: #f9f9f9;
+
+  @media (prefers-color-scheme: dark) {
+    color: #666;
+    border-color: #2a2a2a;
+    background: #0b0b0b;
+  }
 `;
 
 export const SuccessMessage = styled.div`
-  padding: 10px 14px;
-  border-radius: 6px;
-  background: ${({ theme }) => theme.successBg};
-  border: 1px solid ${({ theme }) => theme.successBorder};
-  color: ${({ theme }) => theme.successText};
-  font-size: 13px;
-  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+  font-size: 14px;
+  margin-bottom: 16px;
   animation: slideIn 0.3s ease;
 
   @keyframes slideIn {
@@ -416,15 +282,27 @@ export const SuccessMessage = styled.div`
       transform: translateY(0);
     }
   }
+
+  @media (prefers-color-scheme: dark) {
+    background: #1e4620;
+    border-color: #2d5f30;
+    color: #7ec985;
+  }
 `;
 
 export const ErrorMessage = styled.div`
-  padding: 10px 14px;
-  border-radius: 6px;
-  background: ${({ theme }) => theme.errorBg};
-  border: 1px solid ${({ theme }) => theme.errorBorder};
-  color: ${({ theme }) => theme.errorText};
-  font-size: 13px;
-  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  font-size: 14px;
+  margin-bottom: 16px;
   animation: slideIn 0.3s ease;
+
+  @media (prefers-color-scheme: dark) {
+    background: #4a1f23;
+    border-color: #5c2329;
+    color: #ea868f;
+  }
 `;
