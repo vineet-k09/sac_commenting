@@ -40,10 +40,7 @@ function CommentPage() {
   const [errorMessage, setErrorMessage] = useState('');
 
   // Generic filters state
-  const [filters, setFilters] = useState<Record<string, string>>({
-    "apple": "red",
-    "banana": "yellow"
-  }); // dummy filter for demo
+  const [filters, setFilters] = useState<Record<string, string>>({});
 
   // Generate stable filter string from filter combination
   const getFilterString = () => {
