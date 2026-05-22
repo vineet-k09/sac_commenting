@@ -1,13 +1,19 @@
-import { getComments, createComment } from "./commenting.repo";
+import { getComments, createComment, deleteComment } from "./commenting.repo";
+import { Comment } from "./commenting.types";
 
-export async function handleCreateComment(data: any){
-    const { user, comment, filter } = data;
-    const res = await createComment(user, comment, filter); // 
+export async function handleCreateComment(data: Comment){
+    const { id, user, comment, filter, type, timestamp, options } = data;
+    const res = await createComment(user, comment, filter ?? "", id, type, timestamp, options);
     return res;
 }
 
 export async function handleGetComments(filter?: string){
     const res = await getComments(filter);
+    return res;
+}
+
+export async function handleDeleteComment(id: string){
+    const res = await deleteComment(id);
     return res;
 }
 

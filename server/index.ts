@@ -61,6 +61,7 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 export var PROJECT_ID = process.env.PROJECT_ID;
+console.log("Project ID:", PROJECT_ID);
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
