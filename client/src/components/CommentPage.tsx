@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import {
   Container,
   HeaderRow,
@@ -66,7 +66,7 @@ const API_BASE_URL = '/api/comment';
 
 function CommentPage({ isDark, toggleTheme }: CommentPageProps) {
   const [activeTab, setActiveTab] = useState<'post' | 'view'>('post');
-  const [user, setUser] = useState('');
+  const [user, setUser] = useState('SAC Test User');
   const [commentText, setCommentText] = useState('');
   const [commentType, setCommentType] = useState<CommentType>('text');
   const [interactiveOptions, setInteractiveOptions] = useState<string[]>(['']);
@@ -94,6 +94,7 @@ function CommentPage({ isDark, toggleTheme }: CommentPageProps) {
 
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [fetchStatus, setFetchStatus] = useState('');
 
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
@@ -110,16 +111,19 @@ function CommentPage({ isDark, toggleTheme }: CommentPageProps) {
   };
 
   const fetchComments = async (filterString: string) => {
+    setFetchStatus(`Fetching comments for ${filterString}...`);
     try {
       const response = await fetch(`${API_BASE_URL}?filter=${encodeURIComponent(filterString)}`);
       if (!response.ok) throw new Error('Failed to fetch');
       const data = await response.json();
+      setFetchStatus('Fetched comments successfully.');
       // If data is empty and we have filler comments, let's just keep fillers for demonstration if the user wants
       if (data && data.length > 0) {
         setComments(data);
         localStorage.setItem(`comments_${filterString}`, JSON.stringify(data));
       }
     } catch (error) {
+      setFetchStatus('Failed to fetch comments. Using cache if available.');
       const cached = localStorage.getItem(`comments_${filterString}`);
       if (cached) {
         setComments(JSON.parse(cached));
@@ -218,6 +222,8 @@ function CommentPage({ isDark, toggleTheme }: CommentPageProps) {
     fetchComments(filterString);
   }, [filters]);
 
+  const filterString = getFilterString();
+
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       if (e.origin === 'https://vodafone-company-q.eu10.hcs.cloud.sap') {
@@ -294,6 +300,12 @@ function CommentPage({ isDark, toggleTheme }: CommentPageProps) {
 
       <FiltersSection>
         <FiltersSectionTitle>Context</FiltersSectionTitle>
+        <div style={{ fontSize: '13px', color: '#666', marginBottom: '10px', wordBreak: 'break-word' }}>
+          {filterString ? `SAC context: ${filterString}` : 'Waiting for SAC context...'}
+        </div>
+        <div style={{ fontSize: '12px', color: '#999', marginBottom: '10px' }}>
+          {fetchStatus || 'Fetch status will appear here once a request runs.'}
+        </div>
         <FiltersGrid>
           {Object.keys(filters).length === 0 ? (
             <div style={{ color: '#999', fontSize: '13px', fontStyle: 'italic', gridColumn: '1 / -1' }}>
@@ -330,8 +342,8 @@ function CommentPage({ isDark, toggleTheme }: CommentPageProps) {
               <Input
                 type="text"
                 value={user}
-                onChange={(e) => setUser(e.target.value)}
-                placeholder="Your name"
+                readOnly
+                placeholder="SAC-test username"
                 aria-label="User name"
               />
             </div>
