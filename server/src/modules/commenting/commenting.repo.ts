@@ -1,9 +1,11 @@
 import { randomUUID } from "crypto";
 import { BigQueryClient } from "../../shared/big-query/bq-client";
-import { PROJECT_ID } from "../../..";
 import { Comment, CommentLevel } from "./commenting.types";
 const DB_NAME = "vfgrp_sac_commenting";
-const COMMENT_TABLE = `${PROJECT_ID}.${DB_NAME}.comments`
+
+const getTable = () => {
+    return `${process.env.PROJECT_ID}.${DB_NAME}.comments`;
+};
 
 const bq = new BigQueryClient();
 
@@ -12,25 +14,26 @@ export async function createComment(
     content: string, 
     level: CommentLevel, 
     filter: string
-): Promise<Comment>{
+){
     const id = randomUUID();
     const timestamp = new Date().toISOString();
 
     const query = `
-        INSERT INTO ${COMMENT_TABLE}
+        INSERT INTO ${getTable()}
         (
         id,
         user,
         content,
         level,
         filter,
-        CURRENT_TIMESTAMP()
+        created_at
         ) VALUES (
          @id,
          @user,
          @content,
          @level,
-         @filter
+         @filter,
+         CURRENT_TIMESTAMP()
         )`;
 
     const queryParams = {
@@ -41,13 +44,13 @@ export async function createComment(
         filter
     };
 
-    await bq.query(query, queryParams);
+    const res = await bq.query(query, queryParams);
 
-    return { id, user, content, filter, level, timestamp };
+    return res;
 }
 
 export async function getComments(filter?: string){
-    let query = `SELECT * FROM ${COMMENT_TABLE}`;
+    let query = `SELECT * FROM ${getTable()}`;
     if (filter) {
         query += ` WHERE filter = @filter`;
     }
@@ -57,7 +60,7 @@ export async function getComments(filter?: string){
 }
 
 export async function deleteComment(id: string){
-    const query = `DELETE FROM ${COMMENT_TABLE} WHERE id = @id`;
+    const query = `DELETE FROM ${getTable()} WHERE id = @id`;
     const queryParams = { id };
     const res = await bq.query(query, queryParams);
     return res;
@@ -65,7 +68,7 @@ export async function deleteComment(id: string){
 
 export async function putComment(id: string, user: string, content: string, level: CommentLevel, filter: string){
     const query = 
-    `UPDATE ${COMMENT_TABLE} 
+    `UPDATE ${getTable()} 
     SET user = @user, 
     content = @content, 
     level = @level, 
