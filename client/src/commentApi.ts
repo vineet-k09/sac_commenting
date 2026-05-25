@@ -1,28 +1,22 @@
-import type { Comment, CommentLevel } from './types';
+import type { Comment } from './types';
 
 const API_BASE = '/api/comment';
-const CACHE_KEY = (filter: string, level?: CommentLevel) =>
-  level ? `c_${filter}_${level}` : `c_${filter}`;
+const CACHE_KEY = (filter: string) => `c_${filter}`;
 
-/* ─── Fetch comments from backend ───────────────────────── */
-export async function fetchComments(
-  filterStr: string,
-  level?: CommentLevel,
-): Promise<Comment[]> {
+/* ─── Fetch comments from backend (both page + row levels) ── */
+export async function fetchComments(filterStr: string): Promise<Comment[]> {
   const params = new URLSearchParams({ filter: filterStr });
-  if (level) params.set('level', level);
-  const cacheKey = CACHE_KEY(filterStr, level);
   try {
     const res = await fetch(`${API_BASE}?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: Comment[] = await res.json();
     if (data?.length) {
-      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem(CACHE_KEY(filterStr), JSON.stringify(data));
     }
     return data ?? [];
   } catch {
     // Fall back to locally cached data when backend is unavailable
-    const cached = localStorage.getItem(cacheKey);
+    const cached = localStorage.getItem(CACHE_KEY(filterStr));
     return cached ? (JSON.parse(cached) as Comment[]) : [];
   }
 }

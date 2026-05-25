@@ -67,17 +67,17 @@ export function useCommentPage() {
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  /* ── Fetch comments when filters or level changes ───────── */
+  /* ── Fetch ALL comments for this page context on context change ── */
   useEffect(() => {
     const fs = buildFilterStr(filters);
     if (!fs) return;
     setIsLoading(true);
-    fetchComments(fs, level).then(data => {
+    fetchComments(fs).then(data => {
       if (data.length) setComments(data);
     }).finally(() => {
       setTimeout(() => setIsLoading(false), 600);
     });
-  }, [filters, level]);
+  }, [filters]); // level excluded intentionally — toggle is client-side only
 
   /* ── Computed ────────────────────────────────────────────── */
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
