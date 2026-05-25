@@ -1,4 +1,4 @@
-import CommentPage from './components/CommentPage';
+import CommentPage from './components/comment/CommentPage';
 import './index.css';
 import './App.css';
 

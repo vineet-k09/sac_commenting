@@ -1,11 +1,11 @@
 import React from 'react';
-import RichTextEditor from './RichTextEditor';
-import ToastContainer from './ToastContainer';
-import SkeletonCard from './SkeletonCard';
+import RichTextEditor from '../helper/RichTextEditor';
+import ToastContainer from '../ui/ToastContainer';
+import SkeletonCard from '../ui/SkeletonCard';
 import { useCommentPage } from './useCommentPage';
-import { groupByDate, formatTs, getInitials, stripHtml } from '../commentUtils';
-import type { Comment } from '../types';
-import { AVATAR_COLORS } from '../mockData';
+import { groupByDate, formatTs, getInitials, stripHtml } from '../../commentUtils';
+import type { Comment } from '../../types';
+import { AVATAR_COLORS } from '../../mockData';
 import './CommentPage.css';
 
 /* ─── Inline SVG Icons ───────────────────────────────────── */

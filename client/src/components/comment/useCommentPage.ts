@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import type { ToastItem } from './ToastContainer';
-import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../types';
-import { SAMPLE_COMMENTS } from '../mockData';
+import type { ToastItem } from '../ui/ToastContainer';
+import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../../types';
+import { SAMPLE_COMMENTS } from '../../mockData';
 import {
   uid, stripHtml, buildSummary,
   generateAi, buildAiPreviewHtml,
-} from '../commentUtils';
-import { fetchComments, saveComment, cacheComments, buildFilterStr } from '../commentApi';
+} from '../../commentUtils';
+import { fetchComments, saveComment, cacheComments, buildFilterStr } from '../../commentApi';
 
 
 

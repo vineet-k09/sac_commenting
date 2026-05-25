@@ -3,12 +3,12 @@ export type CommentLevel = 'page' | 'row';
 export type ActiveTab    = 'comments' | 'post' | 'ai';
 
 export interface Comment {
-  id: string;
+  id: string; // from frontend not backend
   user: string;
   content: string;   // rich-text HTML
   level: CommentLevel;
   filter: string;
-  timestamp: string; // ISO 8601
+  timestamp: string; // ISO 8601 
 }
 
 export interface WordSug {
