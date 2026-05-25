@@ -1,4 +1,4 @@
-import type { Comment, CommentLevel, WordSug, SentSug } from './types';
+import type { Comment, CommentLevel, WordSug, SentSug, DateGroup } from './types';
 import { WORD_MAP, AI_SUMMARY_THEMES } from './mockData';
 
 /* ─── General utilities ─────────────────────────────────── */

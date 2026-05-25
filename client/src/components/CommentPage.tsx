@@ -4,6 +4,7 @@ import ToastContainer from './ToastContainer';
 import SkeletonCard from './SkeletonCard';
 import { useCommentPage } from './useCommentPage';
 import { groupByDate, formatTs, getInitials, stripHtml } from '../commentUtils';
+import type { Comment } from '../types';
 import { AVATAR_COLORS } from '../mockData';
 import './CommentPage.css';
 
@@ -24,7 +25,6 @@ export default function CommentPage() {
   const {
     activeTab, setActiveTab,
     level, setLevel,
-    comments,
     user,
     editorHtml, setEditorHtml,
     editorKey,
@@ -124,7 +124,7 @@ export default function CommentPage() {
               groupByDate(visibleComments).map(({ label, items }) => (
                 <div key={label}>
                   <div className="cp-date-divider"><span>{label}</span></div>
-                  {items.map((c, i) => {
+                  {items.map((c: Comment, i: number) => {
                     const { relative, absolute } = formatTs(c.timestamp);
                     const accent  = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const isNew   = new Date(c.timestamp) > lastOpened;
