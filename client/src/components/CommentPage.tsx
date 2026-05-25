@@ -1,467 +1,308 @@
-import  { useEffect, useState } from 'react';
-import {
-  Container,
-  HeaderRow,
-  PageTitle,
-  ThemeToggle,
-  TabsContainer,
-  Tab,
-  FiltersSection,
-  FiltersSectionTitle,
-  FiltersGrid,
-  FilterItem,
-  FilterLabel,
-  FilterValue,
-  CommentForm,
-  FormActions,
-  Input,
-  Select,
-  CommentTextArea,
-  AddButton,
-  AiRegenerateButton,
-  AiSuggestionsContainer,
-  AiSuggestionItem,
-  CommentsList,
-  CommentCard,
-  CommentHeader,
-  CommentUser,
-  CommentDate,
-  CommentText,
-  EditButton,
-  EmptyState,
-  SuccessMessage,
-  ErrorMessage,
-  ChecklistContainer,
-  ChecklistItem,
-  PollContainer,
-  PollOption,
-  InteractiveCreator,
-  AddOptionButton
-} from './CommentPage.styled';
+import React from 'react';
+import RichTextEditor from './RichTextEditor';
+import ToastContainer from './ToastContainer';
+import SkeletonCard from './SkeletonCard';
+import { useCommentPage } from './useCommentPage';
+import { groupByDate, formatTs, getInitials, stripHtml } from '../commentUtils';
+import { AVATAR_COLORS } from '../mockData';
+import './CommentPage.css';
 
-type CommentType = 'text' | 'checklist' | 'multiple_choice' | 'poll';
+/* ─── Inline SVG Icons ───────────────────────────────────── */
+const IconChat    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
+const IconPen     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>;
 
-type Comment = {
-  id?: string;
-  user: string;
-  comment: string;
-  filter: string;
-  timestamp?: string;
-  type?: CommentType;
-  options?: string[]; // for interactive elements
-};
-
-interface CommentPageProps {
-  isDark: boolean;
-  toggleTheme: () => void;
-}
-
-const AI_SUGGESTIONS = [
-  "This looks correct and aligns with our projections.",
-  "I noticed a slight discrepancy here, could we verify?",
-  "Great results this quarter. Let's maintain this momentum."
+const AI_FEATURES = [
+  { icon: '📊', title: 'Data Q&A',        desc: 'Ask natural language questions about the numbers on screen' },
+  { icon: '🔍', title: 'Trend Analysis',   desc: 'Identify patterns, outliers, and variances automatically' },
+  { icon: '📝', title: 'Comment Insights', desc: 'Summarise and cross-reference all comments on this page' },
 ];
 
-const API_BASE_URL = '/api/comment';
-
-function CommentPage({ isDark, toggleTheme }: CommentPageProps) {
-  const [activeTab, setActiveTab] = useState<'post' | 'view'>('post');
-  const [user, setUser] = useState('SAC Test User');
-  const [commentText, setCommentText] = useState('');
-  const [commentType, setCommentType] = useState<CommentType>('text');
-  const [interactiveOptions, setInteractiveOptions] = useState<string[]>(['']);
-  
-  // Adding some filler comments as requested
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: 'filler-1',
-      user: 'Alice',
-      comment: 'Please make sure to review the Q3 targets before the meeting.',
-      filter: 'Page:Dashboard',
-      timestamp: new Date(Date.now() - 3600000 * 24).toISOString(), // 1 day ago
-      type: 'text'
-    },
-    {
-      id: 'filler-2',
-      user: 'Bob',
-      comment: 'Which of these metrics should we prioritize?',
-      filter: 'Page:Dashboard',
-      timestamp: new Date(Date.now() - 3600000 * 2).toISOString(), // 2 hours ago
-      type: 'poll',
-      options: ['Revenue Growth', 'Customer Retention', 'Net Promoter Score']
-    }
-  ]);
-
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [fetchStatus, setFetchStatus] = useState('');
-
-  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-
-  // Generic filters state
-  const [filters, setFilters] = useState<Record<string, string>>({});
-
-  // Generate stable filter string from filter combination
-  const getFilterString = () => {
-    const keys = Object.keys(filters);
-    if (keys.length === 0) return null;
-    const sortedKeys = keys.sort();
-    return sortedKeys.map(key => `${key}:${filters[key]}`).join(';');
-  };
-
-  const fetchComments = async (filterString: string) => {
-    setFetchStatus(`Fetching comments for ${filterString}...`);
-    try {
-      const response = await fetch(`${API_BASE_URL}?filter=${encodeURIComponent(filterString)}`);
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
-      setFetchStatus('Fetched comments successfully.');
-      // If data is empty and we have filler comments, let's just keep fillers for demonstration if the user wants
-      if (data && data.length > 0) {
-        setComments(data);
-        localStorage.setItem(`comments_${filterString}`, JSON.stringify(data));
-      }
-    } catch (error) {
-      setFetchStatus('Failed to fetch comments. Using cache if available.');
-      const cached = localStorage.getItem(`comments_${filterString}`);
-      if (cached) {
-        setComments(JSON.parse(cached));
-      }
-    }
-  };
-
-  const handleSaveComment = async () => {
-    if (!commentText.trim() || !user.trim()) {
-      setErrorMessage('Please enter both user name and comment');
-      setTimeout(() => setErrorMessage(''), 3000);
-      return;
-    }
-
-    const filterString = getFilterString() || 'DefaultContext';
-    
-    // Filter out empty options if interactive
-    const validOptions = commentType !== 'text' ? interactiveOptions.filter(o => o.trim() !== '') : [];
-
-    const commentPayload: Comment = {
-      id: editingCommentId || crypto.randomUUID(), // Assign ID if new
-      user: user.trim(),
-      comment: commentText.trim(),
-      filter: filterString,
-      timestamp: new Date().toISOString(),
-      type: commentType,
-      options: validOptions.length > 0 ? validOptions : undefined,
-    };
-
-    try {
-      const method = editingCommentId ? 'PUT' : 'POST';
-      const url = editingCommentId ? `${API_BASE_URL}/${editingCommentId}` : API_BASE_URL;
-      
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(commentPayload),
-      });
-
-      if (!response.ok) throw new Error('Failed to save');
-      
-      setSuccessMessage(editingCommentId ? 'Comment updated successfully!' : 'Comment saved successfully!');
-      resetForm();
-      setActiveTab('view');
-      setTimeout(() => setSuccessMessage(''), 3000);
-      await fetchComments(filterString);
-    } catch (error) {
-      // Fallback
-      const storageKey = `comments_${filterString}`;
-      let updatedComments = [...comments];
-      
-      if (editingCommentId) {
-        updatedComments = updatedComments.map(c => c.id === editingCommentId ? commentPayload : c);
-      } else {
-        updatedComments.unshift(commentPayload); // Add new comment to top
-      }
-      
-      localStorage.setItem(storageKey, JSON.stringify(updatedComments));
-      setComments(updatedComments);
-      setErrorMessage('API unavailable - saved locally');
-      resetForm();
-      setActiveTab('view');
-      setTimeout(() => setErrorMessage(''), 3000);
-    }
-  };
-
-  const resetForm = () => {
-    setCommentText('');
-    setCommentType('text');
-    setInteractiveOptions(['']);
-    setEditingCommentId(null);
-    setShowAiSuggestions(false);
-  };
-
-  const handleEditClick = (comment: Comment) => {
-    setEditingCommentId(comment.id || null);
-    setCommentText(comment.comment);
-    setCommentType(comment.type || 'text');
-    setInteractiveOptions(comment.options && comment.options.length > 0 ? comment.options : ['']);
-    setActiveTab('post');
-  };
-
-  const handleInteractiveOptionChange = (index: number, value: string) => {
-    const newOptions = [...interactiveOptions];
-    newOptions[index] = value;
-    setInteractiveOptions(newOptions);
-  };
-
-  const addInteractiveOption = () => {
-    setInteractiveOptions([...interactiveOptions, '']);
-  };
-
-  useEffect(() => {
-    const filterString = getFilterString();
-    if (!filterString) return;
-    fetchComments(filterString);
-  }, [filters]);
-
-  const filterString = getFilterString();
-
-  useEffect(() => {
-    const handleMessage = (e: MessageEvent) => {
-      if (e.origin === 'https://vodafone-company-q.eu10.hcs.cloud.sap') {
-        const data = e.data;
-        if (typeof data === 'string') {
-          // Parse a string like "Username:John Doe;Region:EMEA;Year:2024"
-          const parts = data.split(';');
-          
-          parts.forEach(part => {
-            const separatorIndex = part.indexOf(':');
-            if (separatorIndex !== -1) {
-              const key = part.substring(0, separatorIndex).trim();
-              const value = part.substring(separatorIndex + 1).trim();
-              
-              if (key && value) {
-                if (key.toLowerCase() === 'username') {
-                  setUser(value);
-                } else {
-                  setFilters(prev => ({ ...prev, [key]: value }));
-                }
-              }
-            }
-          });
-        }
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  const renderInteractiveContent = (comment: Comment) => {
-    if (!comment.options || comment.options.length === 0) return null;
-
-    if (comment.type === 'checklist') {
-      return (
-        <ChecklistContainer>
-          {comment.options.map((opt, idx) => (
-            <ChecklistItem key={idx}>
-              <input type="checkbox" id={`${comment.id}-check-${idx}`} />
-              <label htmlFor={`${comment.id}-check-${idx}`}>{opt}</label>
-            </ChecklistItem>
-          ))}
-        </ChecklistContainer>
-      );
-    }
-    
-    if (comment.type === 'poll' || comment.type === 'multiple_choice') {
-      return (
-        <PollContainer>
-          {comment.options.map((opt, idx) => (
-            <PollOption key={idx}>
-              <input 
-                type={comment.type === 'poll' ? 'radio' : 'checkbox'} 
-                name={`group-${comment.id}`} 
-                id={`${comment.id}-opt-${idx}`} 
-              />
-              <label htmlFor={`${comment.id}-opt-${idx}`}>{opt}</label>
-            </PollOption>
-          ))}
-        </PollContainer>
-      );
-    }
-    return null;
-  };
+/* ═══════════════════════════════════════════════════════════
+   CommentPage — JSX only. All logic lives in useCommentPage.
+   ═══════════════════════════════════════════════════════════ */
+export default function CommentPage() {
+  const {
+    activeTab, setActiveTab,
+    level, setLevel,
+    comments,
+    user,
+    editorHtml, setEditorHtml,
+    editorKey,
+    editingId,
+    filters,
+    isLoading,
+    lastOpened,
+    toasts, removeToast,
+    drawerOpen, setDrawerOpen,
+    summaryText,
+    sumLoading,
+    aiMode, wordSugs, sentSugs, aiHtml,
+    visibleComments,
+    newCommentCount,
+    handleSave, handleEdit, resetPost,
+    openSummary,
+    handleAiRewrite,
+    applyWordChoice, acceptAllAi, applySentence,
+  } = useCommentPage();
 
   return (
-    <Container>
-      <HeaderRow>
-        <PageTitle>Comments</PageTitle>
-        <ThemeToggle onClick={toggleTheme}>
-          {isDark ? '☀️ Light Mode' : '🌙 Dark Mode'}
-        </ThemeToggle>
-      </HeaderRow>
+    <div className="cp-root">
 
-      <FiltersSection>
-        <FiltersSectionTitle>Context</FiltersSectionTitle>
-        <div style={{ fontSize: '13px', color: '#666', marginBottom: '10px', wordBreak: 'break-word' }}>
-          {filterString ? `SAC context: ${filterString}` : 'Waiting for SAC context...'}
-        </div>
-        <div style={{ fontSize: '12px', color: '#999', marginBottom: '10px' }}>
-          {fetchStatus || 'Fetch status will appear here once a request runs.'}
-        </div>
-        <FiltersGrid>
-          {Object.keys(filters).length === 0 ? (
-            <div style={{ color: '#999', fontSize: '13px', fontStyle: 'italic', gridColumn: '1 / -1' }}>
-              Waiting for data from SAC...
-            </div>
-          ) : (
-            Object.entries(filters).map(([key, value]) => (
-              <FilterItem key={key}>
-                <FilterLabel>{key.replace(/_/g, ' ')}</FilterLabel>
-                <FilterValue>{value}</FilterValue>
-              </FilterItem>
-            ))
-          )}
-        </FiltersGrid>
-      </FiltersSection>
-
-      <TabsContainer>
-        <Tab $active={activeTab === 'post'} onClick={() => setActiveTab('post')}>
-          {editingCommentId ? 'Edit Comment' : 'Post Comment'}
-        </Tab>
-        <Tab $active={activeTab === 'view'} onClick={() => setActiveTab('view')}>
-          View Comments ({comments.length})
-        </Tab>
-      </TabsContainer>
-
-      {successMessage && <SuccessMessage>{successMessage}</SuccessMessage>}
-      {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-
-      {activeTab === 'post' && (
-        <CommentForm>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--theme-text)' }}>Name</label>
-              <Input
-                type="text"
-                value={user}
-                readOnly
-                placeholder="SAC-test username"
-                aria-label="User name"
-              />
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--theme-text)' }}>Type</label>
-              <Select value={commentType} onChange={(e) => setCommentType(e.target.value as CommentType)}>
-                <option value="text">Text</option>
-                <option value="checklist">Checklist</option>
-                <option value="multiple_choice">Multiple Choice</option>
-                <option value="poll">Poll</option>
-              </Select>
-            </div>
-          </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--theme-text)' }}>Comment Description</label>
-            <CommentTextArea
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Write your comment here..."
-              aria-label="Comment text"
-            />
-          </div>
-
-          {commentType !== 'text' && (
-            <InteractiveCreator>
-              <label style={{ fontSize: '12px', fontWeight: 600 }}>Options</label>
-              {interactiveOptions.map((opt, idx) => (
-                <Input 
-                  key={idx}
-                  value={opt}
-                  onChange={(e) => handleInteractiveOptionChange(idx, e.target.value)}
-                  placeholder={`Option ${idx + 1}`}
-                />
-              ))}
-              <AddOptionButton type="button" onClick={addInteractiveOption}>
-                + Add Option
-              </AddOptionButton>
-            </InteractiveCreator>
-          )}
-
-          <FormActions>
-            <AddButton 
-              onClick={handleSaveComment} 
-              disabled={!commentText.trim() || !user.trim()} 
-              type="button"
-            >
-              {editingCommentId ? 'Save Changes' : 'Add Comment'}
-            </AddButton>
-            
-            <AiRegenerateButton 
-              type="button" 
-              onClick={() => setShowAiSuggestions(!showAiSuggestions)}
-            >
-              ✨ Regenerate with AI
-            </AiRegenerateButton>
-            
-            {editingCommentId && (
-              <button 
-                type="button" 
-                onClick={resetForm}
-                style={{ background: 'transparent', border: 'none', color: '#999', cursor: 'pointer', fontWeight: 600, fontSize: '13px' }}
-              >
-                Cancel Edit
-              </button>
+      {/* ── Header ── */}
+      <div className="cp-header">
+        <div className="cp-header-inner">
+          <span className="cp-logo">💬</span>
+          <div>
+            <h1 className="cp-title">SAC Comments</h1>
+            {Object.keys(filters).length > 0 && (
+              <div className="cp-ctx">
+                {Object.entries(filters).map(([k, v]) => (
+                  <span key={k} className="cp-ctx-chip">
+                    <span className="cp-ctx-key">{k}</span>{v}
+                  </span>
+                ))}
+              </div>
             )}
-          </FormActions>
+          </div>
+        </div>
+      </div>
 
-          {showAiSuggestions && (
-            <AiSuggestionsContainer>
-              <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>AI Suggestions:</div>
-              {AI_SUGGESTIONS.map((suggestion, idx) => (
-                <AiSuggestionItem 
-                  key={idx} 
-                  onClick={() => {
-                    setCommentText(suggestion);
-                    setShowAiSuggestions(false);
-                  }}
-                >
-                  {suggestion}
-                </AiSuggestionItem>
-              ))}
-            </AiSuggestionsContainer>
+      {/* ── Tabs ── */}
+      <div className="cp-tabs">
+        <button className={`cp-tab${activeTab === 'comments' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('comments')} id="tab-comments">
+          <IconChat /> Comments
+          <span className="cp-tab-badge">{visibleComments.length}</span>
+          {newCommentCount > 0 && <span className="cp-tab-dot" />}
+        </button>
+        <button className={`cp-tab${activeTab === 'post' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('post')} id="tab-post">
+          <IconPen /> {editingId ? 'Editing' : 'Post'}
+        </button>
+
+        <button className={`cp-tab${activeTab === 'ai' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('ai')} id="tab-ai">
+          ✨ Ask AI
+        </button>
+      </div>
+
+      {/* ── Context Breadcrumb ── */}
+      {(activeTab === 'comments' || activeTab === 'post') && (
+        <div className="cp-breadcrumb">
+          <span className="cp-breadcrumb-level">{level === 'page' ? '📄 Page Level' : '≡ Row Level'}</span>
+          {Object.entries(filters).map(([k, v]) => (
+            <span key={k} className="cp-breadcrumb-chip">
+              <span className="cp-breadcrumb-key">{k}</span>{v}
+            </span>
+          ))}
+          {Object.keys(filters).length === 0 && (
+            <span className="cp-breadcrumb-empty">Waiting for SAC context…</span>
           )}
-        </CommentForm>
+        </div>
       )}
 
-      {activeTab === 'view' && (
-        <CommentsList>
-          {comments.length === 0 ? (
-            <EmptyState>No comments yet for this context. Be the first to add one!</EmptyState>
-          ) : (
-            comments.map((comment) => (
-              <CommentCard key={comment.id || comment.timestamp}>
-                <CommentHeader>
-                  <div>
-                    <CommentUser>{comment.user}</CommentUser>
-                    {comment.timestamp && (
-                      <CommentDate style={{ marginLeft: '8px' }}>
-                        {new Date(comment.timestamp).toLocaleString()}
-                      </CommentDate>
-                    )}
+      {/* ══════════ COMMENTS TAB ══════════ */}
+      {activeTab === 'comments' && (
+        <div className="cp-panel">
+          {/* Level toggle + summarise */}
+          <div className="cp-toolbar">
+            <div className="cp-level-toggle">
+              <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')} id="level-page">📄 Page</button>
+              <button className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} onClick={() => setLevel('row')}  id="level-row">≡ Row</button>
+            </div>
+            <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise">✨ Summarise</button>
+          </div>
+
+          {/* Comment cards */}
+          <div className="cp-comments-list">
+            {isLoading ? (
+              [0, 1, 2].map(i => <SkeletonCard key={i} index={i} />)
+            ) : visibleComments.length === 0 ? (
+              <div className="cp-empty">
+                <div className="cp-empty-icon">💬</div>
+                <p>No {level}-level comments yet.</p>
+                <button className="cp-link-btn" onClick={() => setActiveTab('post')}>Be the first to add one →</button>
+              </div>
+            ) : (
+              groupByDate(visibleComments).map(({ label, items }) => (
+                <div key={label}>
+                  <div className="cp-date-divider"><span>{label}</span></div>
+                  {items.map((c, i) => {
+                    const { relative, absolute } = formatTs(c.timestamp);
+                    const accent  = AVATAR_COLORS[i % AVATAR_COLORS.length];
+                    const isNew   = new Date(c.timestamp) > lastOpened;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`cp-card${isNew ? ' cp-card--new' : ''}`}
+                        style={{ '--accent': 'linear-gradient(180deg,#0f1f6e,#1e56c8)', animationDelay: `${i * 0.05}s` } as React.CSSProperties}
+                      >
+                        <div className="cp-card-accent" />
+                        <div className="cp-card-body">
+                          <div className="cp-card-head">
+                            <div className="cp-avatar" style={{ background: accent }}>{getInitials(c.user)}</div>
+                            <div className="cp-meta">
+                              <div className="cp-username-row">
+                                <span className="cp-username">{c.user}</span>
+                                <span className={`cp-level-tag cp-level-tag--${c.level}`}>
+                                  {c.level === 'page' ? '📄 Page' : '≡ Row'}
+                                </span>
+                                {isNew && <span className="cp-new-badge">New</span>}
+                              </div>
+                              <span className="cp-ts" title={absolute}>{relative} · {absolute}</span>
+                            </div>
+                            <button className="cp-edit-btn" onClick={() => handleEdit(c)}>✏️ Edit</button>
+                          </div>
+                          <div className="cp-content" dangerouslySetInnerHTML={{ __html: c.content }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ POST TAB ══════════ */}
+      {activeTab === 'post' && (
+        <div className="cp-panel">
+          <div className="cp-field">
+            <label className="cp-label">Posting as</label>
+            <div className="cp-user-badge">
+              <span className="cp-user-dot" />
+              <span>{user || 'Waiting for SAC context…'}</span>
+            </div>
+          </div>
+
+          <div className="cp-field">
+            <label className="cp-label">Comment Level</label>
+            <div className="cp-level-toggle">
+              <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')}>📄 Page</button>
+              <button className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} onClick={() => setLevel('row')}>≡ Row</button>
+            </div>
+          </div>
+
+          <div className="cp-field">
+            <label className="cp-label">Comment</label>
+            <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
+          </div>
+
+          {/* AI diff preview */}
+          {aiMode && (
+            <div className="cp-ai-panel">
+              <div className="cp-ai-header">
+                <span className="cp-ai-badge">✨ AI Rewrite Suggestions</span>
+                <button className="cp-link-btn" onClick={resetPost}>✕ Cancel</button>
+              </div>
+              <div className="cp-ai-preview" dangerouslySetInnerHTML={{ __html: aiHtml }} />
+              {wordSugs.length > 0 && (
+                <div className="cp-ai-section">
+                  <p className="cp-ai-section-title">Word Suggestions</p>
+                  <div className="cp-word-chips">
+                    {wordSugs.map((w, i) => (
+                      <div key={i} className="cp-word-group">
+                        <span className="cp-word-orig">{w.original}</span>
+                        <span className="cp-word-arrow">→</span>
+                        {w.alts.map(alt => (
+                          <button key={alt} className={`cp-word-alt${w.chosen === alt ? ' chosen' : ''}`} onClick={() => applyWordChoice(i, alt)}>{alt}</button>
+                        ))}
+                      </div>
+                    ))}
                   </div>
-                  {comment.user === user && (
-                    <EditButton onClick={() => handleEditClick(comment)}>
-                      ✏️ Edit
-                    </EditButton>
-                  )}
-                </CommentHeader>
-                <CommentText>{comment.comment}</CommentText>
-                {renderInteractiveContent(comment)}
-              </CommentCard>
-            ))
+                </div>
+              )}
+              {sentSugs.length > 0 && (
+                <div className="cp-ai-section">
+                  <p className="cp-ai-section-title">Sentence Rewrites</p>
+                  {sentSugs.map((s, i) => (
+                    <div key={i} className="cp-sent-card">
+                      <p className="cp-sent-orig">{s.original}</p>
+                      <p className="cp-sent-new">{s.rewritten}</p>
+                      <button className="cp-sent-apply" onClick={() => applySentence(s)}>Apply →</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="cp-ai-actions">
+                <button className="cp-btn-primary" onClick={acceptAllAi}>Accept All</button>
+                <button className="cp-btn-ghost" onClick={() => setActiveTab('post')}>Dismiss</button>
+              </div>
+            </div>
           )}
-        </CommentsList>
+
+          <div className="cp-actions">
+            <button className="cp-btn-primary" onClick={handleSave} id="btn-post">
+              {editingId ? 'Save Changes' : 'Post Comment'}
+            </button>
+            <button className="cp-btn-ai" onClick={handleAiRewrite} disabled={!editorHtml || stripHtml(editorHtml).length < 5} id="btn-ai-rewrite">
+              ✨ Rewrite with AI
+            </button>
+            {editingId && <button className="cp-btn-ghost" onClick={resetPost}>Cancel</button>}
+          </div>
+        </div>
       )}
-    </Container>
+
+
+
+      {/* ══════════ AI TAB ══════════ */}
+      {activeTab === 'ai' && (
+        <div className="cp-panel cp-ai-page">
+          <div className="cp-ai-page-hero">
+            <div className="cp-ai-page-icon">✨</div>
+            <h2 className="cp-ai-page-title">AI Dashboard Assistant</h2>
+            <p className="cp-ai-page-sub">Ask questions about your dashboard data, get trend analysis, and surface key insights — all in context.</p>
+          </div>
+          <div className="cp-ai-page-features">
+            {AI_FEATURES.map(f => (
+              <div key={f.title} className="cp-ai-page-feature">
+                <span className="cp-ai-page-feature-icon">{f.icon}</span>
+                <div>
+                  <div className="cp-ai-page-feature-title">{f.title}</div>
+                  <div className="cp-ai-page-feature-desc">{f.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="cp-ai-page-cta">
+            <div className="cp-ai-page-coming">🚀 Coming Soon</div>
+            <p className="cp-ai-page-cta-text">The AI assistant is being connected to your SAC data. It will be available in the next release.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ SUMMARY DRAWER ══════════ */}
+      {drawerOpen && (
+        <>
+          <div className="cp-drawer-backdrop" onClick={() => setDrawerOpen(false)} />
+          <div className="cp-drawer">
+            <div className="cp-drawer-header">
+              <div>
+                <h2 className="cp-drawer-title">✨ AI Summary</h2>
+                <p className="cp-drawer-sub">{level === 'page' ? 'Page' : 'Row'}-level · {visibleComments.length} comment{visibleComments.length !== 1 ? 's' : ''}</p>
+              </div>
+              <button className="cp-drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
+            </div>
+            <div className="cp-drawer-body">
+              {sumLoading ? (
+                <div className="cp-loading">
+                  <div className="cp-spinner" />
+                  <p>Analysing comments…</p>
+                </div>
+              ) : (
+                <>
+                  <div className="cp-summary-text">{summaryText}</div>
+                  <div className="cp-summary-meta">
+                    <strong>Contributors:</strong>{' '}
+                    {[...new Set(visibleComments.map(c => c.user))].join(', ')}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Toasts ── */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </div>
   );
 }
-
-export default CommentPage;
