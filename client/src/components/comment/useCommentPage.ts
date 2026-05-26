@@ -53,11 +53,27 @@ export function useCommentPage() {
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (typeof e.data !== 'string') return;
-      e.data.split(';').forEach((part: string) => {
-        const sep = part.indexOf(':');
-        if (sep === -1) return;
-        const k = part.substring(0, sep).trim();
-        const v = part.substring(sep + 1).trim();
+      // Accept multiple separators (";" and "?") and both "key:value" and "key value" formats
+      e.data.split(/[;?]/).forEach((part: string) => {
+        const raw = part.trim();
+        if (!raw) return;
+
+        let k: string | null = null;
+        let v: string | null = null;
+
+        if (raw.includes(':')) {
+          const sep = raw.indexOf(':');
+          k = raw.substring(0, sep).trim();
+          v = raw.substring(sep + 1).trim();
+        } else {
+          // fallback to first whitespace-separated token as key
+          const firstSpace = raw.indexOf(' ');
+          if (firstSpace !== -1) {
+            k = raw.substring(0, firstSpace).trim();
+            v = raw.substring(firstSpace + 1).trim();
+          }
+        }
+
         if (!k || !v) return;
         if (k.toLowerCase() === 'username') setUser(v);
         else setFilters(prev => ({ ...prev, [k]: v }));
@@ -69,8 +85,7 @@ export function useCommentPage() {
 
   /* ── Fetch ALL comments for this page context on context change ── */
   useEffect(() => {
-    const fs = buildFilterStr(filters);
-    if (!fs) return;
+    const fs = buildFilterStr(filters) ?? 'DefaultContext';
     setIsLoading(true);
     fetchComments(fs).then(data => {
       if (data.length) setComments(data);
