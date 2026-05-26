@@ -38,13 +38,14 @@
 }
 .cp-ctx-chip {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   background: rgba(255,255,255,0.18);
   border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 20px;
-  padding: 2px 8px;
-  font-size: 11px;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
   color: #fff;
   backdrop-filter: blur(4px);
 }
@@ -54,6 +55,35 @@
   text-transform: uppercase;
   letter-spacing: 0.4px;
   font-size: 10px;
+}
+.cp-ctx-val {
+  font-weight: 700;
+  font-size: 12px;
+  margin-top: 0px;
+}
+
+/* Breadcrumb chips */
+.cp-breadcrumb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text);
+}
+.cp-breadcrumb-key {
+  font-weight: 600;
+  opacity: 0.75;
+  text-transform: none;
+  font-size: 12px;
+}
+.cp-breadcrumb-val {
+  font-weight: 600;
+  color: var(--c-blue);
 }
 
 /* ─── Tabs ───────────────────────────────────────────────── */

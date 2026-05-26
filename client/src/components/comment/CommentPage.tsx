@@ -2,6 +2,7 @@ import React from 'react';
 import RichTextEditor from '../helper/RichTextEditor';
 import ToastContainer from '../ui/ToastContainer';
 import SkeletonCard from '../ui/SkeletonCard';
+import DashboardCapture from './DashboardCapture';
 import { useCommentPage } from './useCommentPage';
 import { groupByDate, formatTs, getInitials, stripHtml } from '../../commentUtils';
 import type { Comment } from '../../types';
@@ -58,7 +59,8 @@ export default function CommentPage() {
               <div className="cp-ctx">
                 {Object.entries(filters).map(([k, v]) => (
                   <span key={k} className="cp-ctx-chip">
-                    <span className="cp-ctx-key">{k}</span>{v}
+                    <span className="cp-ctx-key">{k}:</span>
+                    <span className="cp-ctx-val">{v}</span>
                   </span>
                 ))}
               </div>
@@ -89,7 +91,8 @@ export default function CommentPage() {
           <span className="cp-breadcrumb-level">{level === 'page' ? '📄 Page Level' : '≡ Row Level'}</span>
           {Object.entries(filters).map(([k, v]) => (
             <span key={k} className="cp-breadcrumb-chip">
-              <span className="cp-breadcrumb-key">{k}</span>{v}
+              <span className="cp-breadcrumb-key">{k}:</span>
+              <span className="cp-breadcrumb-val">{v}</span>
             </span>
           ))}
           {Object.keys(filters).length === 0 && (
@@ -185,6 +188,9 @@ export default function CommentPage() {
             <label className="cp-label">Comment</label>
             <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
           </div>
+
+          {/* Generate comments from a page screenshot */}
+          <DashboardCapture />
 
           {/* AI diff preview */}
           {aiMode && (
