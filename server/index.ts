@@ -1,11 +1,15 @@
+import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
-import dotenv from 'dotenv';
-import commentingRoutes from './src/modules/commenting/commenting.routes';
 import path from 'path';
-dotenv.config();
+
+const PORT = process.env.PORT || 3000;
+export var PROJECT_ID = process.env.PROJECT_ID;
+console.log("Project ID:", PROJECT_ID);
+
+import commentingRoutes from './src/modules/commenting/commenting.routes';
 
 const app = express(); // returns express app instance - like returning a new instance of a class
 
@@ -58,10 +62,6 @@ app.get('/', (req, res) => {
     }
   });
 });
-
-const PORT = process.env.PORT || 3000;
-export var PROJECT_ID = process.env.PROJECT_ID;
-console.log("Project ID:", PROJECT_ID);
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

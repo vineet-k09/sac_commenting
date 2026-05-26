@@ -1,5 +1,4 @@
 import { BigQuery } from "@google-cloud/bigquery";
-import { PROJECT_ID } from "../../..";
 
 export interface QueryResult<T = unknown> {
   success: boolean;
@@ -10,10 +9,12 @@ export interface QueryResult<T = unknown> {
 
 export class BigQueryClient { // stateful
   private readonly bigquery: InstanceType<typeof BigQuery>;
+  private readonly resolvedLocation: string;
 
   constructor(
     private readonly projectId?: string,
     private readonly keyFilename?: string,
+    private readonly location: string = 'europe-west3',
   ) {
 
     //  Build options object dynamically to avoid TS errors
@@ -21,12 +22,14 @@ export class BigQueryClient { // stateful
 
     // passing the key_file was causing error because the creds were expired. 
     // updated to only pass the default values 
-    const resolvedProjectId = this.projectId || PROJECT_ID;
+    const resolvedProjectId = this.projectId || process.env.PROJECT_ID;
     const resolvedKeyFilename = this.keyFilename;
+    this.resolvedLocation = this.location || process.env.BQ_LOCATION || 'europe-west3';
     // const resolvedKeyFilename = this.keyFilename || KEY_FILE;
 
     if (resolvedProjectId) options.projectId = resolvedProjectId;
     if (resolvedKeyFilename) options.keyFilename = resolvedKeyFilename;
+    if (this.resolvedLocation) options.location = this.resolvedLocation;
 
     this.bigquery = new BigQuery(options);
 
@@ -47,9 +50,9 @@ export class BigQueryClient { // stateful
       let result;
 
       if (params !== undefined) {
-        result = await this.bigquery.query({ query, params });
+        result = await this.bigquery.query({ query, params, location: this.resolvedLocation });
       } else {
-        result = await this.bigquery.query({ query });
+        result = await this.bigquery.query({ query, location: this.resolvedLocation });
       }
 
       const [rows] = result;
