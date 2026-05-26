@@ -18,6 +18,24 @@ const AI_FEATURES = [
   { icon: '📝', title: 'Comment Insights', desc: 'Summarise and cross-reference all comments on this page' },
 ];
 
+/* ─── Parse row context from a filter string ─────────────── */
+// filter examples: "Row:EMEA", "Row:APAC", "Region:APAC;Row:3"
+function parseRowContext(filter: string): { label: string; value: string; lineNum?: string } {
+  // Try to find an explicit Row: key
+  const parts = filter.split(';').map(p => p.trim());
+  const rowPart = parts.find(p => /^row:/i.test(p));
+  if (rowPart) {
+    const [, val] = rowPart.split(':');
+    // Check if value is purely numeric → treat as line/row number
+    const isNum = /^\d+$/.test(val?.trim() ?? '');
+    return isNum
+      ? { label: 'Row', value: val.trim(), lineNum: val.trim() }
+      : { label: 'Row', value: val?.trim() ?? rowPart };
+  }
+  // Fallback: use the whole filter
+  return { label: 'Context', value: filter };
+}
+
 /* ═══════════════════════════════════════════════════════════
    CommentPage — JSX only. All logic lives in useCommentPage.
    ═══════════════════════════════════════════════════════════ */
@@ -110,6 +128,26 @@ export default function CommentPage() {
             <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise">✨ Summarise</button>
           </div>
 
+          {/* ── Page-level: ONE shared SAC context box ── */}
+          {level === 'page' && Object.keys(filters).length > 0 && (
+            <div className="cp-page-ctx-box">
+              <span className="cp-page-ctx-label">📄 SAC Context</span>
+              <div className="cp-page-ctx-chips">
+                {Object.entries(filters).map(([k, v]) => (
+                  <span key={k} className="cp-page-ctx-chip">
+                    <span className="cp-page-ctx-key">{k}</span>{v}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {level === 'page' && Object.keys(filters).length === 0 && (
+            <div className="cp-page-ctx-box cp-page-ctx-box--empty">
+              <span className="cp-page-ctx-label">📄 SAC Context</span>
+              <span className="cp-page-ctx-waiting">Waiting for SAC context…</span>
+            </div>
+          )}
+
           {/* Comment cards */}
           <div className="cp-comments-list">
             {isLoading ? (
@@ -128,11 +166,12 @@ export default function CommentPage() {
                     const { relative, absolute } = formatTs(c.timestamp);
                     const accent  = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const isNew   = new Date(c.timestamp) > lastOpened;
+                    const rowCtx  = c.level === 'row' ? parseRowContext(c.filter) : null;
                     return (
                       <div
                         key={c.id}
-                        className={`cp-card${isNew ? ' cp-card--new' : ''}`}
-                        style={{ '--accent': 'linear-gradient(180deg,#0f1f6e,#1e56c8)', animationDelay: `${i * 0.05}s` } as React.CSSProperties}
+                        className={`cp-card${isNew ? ' cp-card--new' : ''}${c.level === 'row' ? ' cp-card--row' : ''}`}
+                        style={{ '--accent': c.level === 'row' ? 'linear-gradient(180deg,#dc2626,#b91c1c)' : 'linear-gradient(180deg,#0f1f6e,#1e56c8)', animationDelay: `${i * 0.05}s` } as React.CSSProperties}
                       >
                         <div className="cp-card-accent" />
                         <div className="cp-card-body">
@@ -150,6 +189,25 @@ export default function CommentPage() {
                             </div>
                             <button className="cp-edit-btn" onClick={() => handleEdit(c)}>✏️ Edit</button>
                           </div>
+
+                          {/* ── Row-level: per-comment context badge ── */}
+                          {rowCtx && (
+                            <div className="cp-row-ctx">
+                              {rowCtx.lineNum ? (
+                                <span className="cp-row-ctx-line">
+                                  <span className="cp-row-ctx-hash">#</span>{rowCtx.lineNum}
+                                </span>
+                              ) : (
+                                <span className="cp-row-ctx-badge">
+                                  <span className="cp-row-ctx-icon">≡</span>
+                                  <span className="cp-row-ctx-label">{rowCtx.label}</span>
+                                  <span className="cp-row-ctx-value">{rowCtx.value}</span>
+                                </span>
+                              )}
+                              <span className="cp-row-ctx-filter-raw" title={c.filter}>{c.filter}</span>
+                            </div>
+                          )}
+
                           <div className="cp-content" dangerouslySetInnerHTML={{ __html: c.content }} />
                         </div>
                       </div>
