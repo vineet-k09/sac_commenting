@@ -330,6 +330,35 @@ export const EditButton = styled.button`
   }
 `;
 
+export const CommentFiltersContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid ${({ theme }) => theme.border};
+`;
+
+export const CommentFilterItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: ${({ theme }) => theme.inputBg};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+`;
+
+export const CommentFilterLabel = styled.span`
+  font-weight: 600;
+  color: ${({ theme }) => theme.textSecondary};
+`;
+
+export const CommentFilterValue = styled.span`
+  color: ${({ theme }) => theme.text};
+`;
+
 // Interactive Comment Types
 export const ChecklistContainer = styled.div`
   display: flex;

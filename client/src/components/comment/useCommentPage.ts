@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
 import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../../types';
-import { SAMPLE_COMMENTS } from '../../mockData';
 import {
   uid, stripHtml, buildSummary,
   generateAi, buildAiPreviewHtml,
-} from '../../commentUtils';
-import { fetchComments, saveComment, cacheComments, buildFilterStr } from '../../commentApi';
-
+} from '../api/commentUtils';
+import { fetchComments, saveComment, cacheComments, buildFilterStr } from '../api/commentApi';
 
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
   const [activeTab, setActiveTab] = useState<ActiveTab>('comments');
   const [level, setLevel] = useState<CommentLevel>('page');
-  const [comments, setComments] = useState<Comment[]>(SAMPLE_COMMENTS);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [user, setUser] = useState('');
   const [editorHtml, setEditorHtml] = useState('');
   const [editorKey, setEditorKey] = useState(0);
@@ -92,7 +90,7 @@ export function useCommentPage() {
     const fs = buildFilterStr(filters) ?? 'DefaultContext';
     setIsLoading(true);
     fetchComments(fs).then(data => {
-      if (data.length) setComments(data);
+      setComments(data);
     }).finally(() => {
       setTimeout(() => setIsLoading(false), 600);
     });

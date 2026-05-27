@@ -1,4 +1,4 @@
-import type { Comment } from './types';
+import type { Comment } from '../../types';
 
 const API_BASE = '/api/comment';
 const CACHE_KEY = (filter: string) => `c_${filter}`;

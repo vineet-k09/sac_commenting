@@ -68,9 +68,15 @@ const DashboardCapture: React.FC = () => {
   };
 
   return (
-    <div style={{ marginTop: 12 }}>
-      <button className="cp-btn-ghost" onClick={handleCaptureAndUpload} disabled={isProcessing} id="btn-generate-comments">
-        {isProcessing ? 'Analyzing...' : 'Generate Comments'}
+    <>
+      <button 
+        className="cp-btn-primary" 
+        onClick={handleCaptureAndUpload} 
+        disabled={isProcessing} 
+        id="btn-generate-comments"
+        style={{ background: 'linear-gradient(135deg, #C8102E, #0f1f6e)', color: 'white', border: 'none' }}
+      >
+        {isProcessing ? 'Analyzing...' : 'Generate Comment'}
       </button>
 
       {comment && (
@@ -79,7 +85,7 @@ const DashboardCapture: React.FC = () => {
           <p style={{ margin: 0 }}>{comment}</p>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
