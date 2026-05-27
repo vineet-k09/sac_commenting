@@ -41,6 +41,16 @@ export async function saveComment(
   }
 }
 
+/* ─── Delete a comment ────────────────────────────────── */
+export async function deleteComment(id: string): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch {
+    // Silently fall back — caller updates local state optimistically
+  }
+}
+
 /* ─── Persist comment list to localStorage cache ────────── */
 export function cacheComments(filterStr: string, comments: Comment[]): void {
   localStorage.setItem(CACHE_KEY(filterStr), JSON.stringify(comments));

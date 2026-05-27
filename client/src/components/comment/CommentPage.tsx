@@ -49,7 +49,7 @@ export default function CommentPage() {
     aiMode, wordSugs, sentSugs, aiHtml,
     visibleComments,
     newCommentCount,
-    handleSave, handleEdit, resetPost,
+    handleSave, handleEdit, handleDelete, resetPost,
     openSummary,
     handleAiRewrite,
     applyWordChoice, acceptAllAi, applySentence,
@@ -181,6 +181,10 @@ export default function CommentPage() {
                               className="cp-edit-btn" 
                               onClick={() => handleEdit(c)}
                             >✏️ Edit</button>
+                            <button 
+                              className="cp-delete-btn" 
+                              onClick={() => handleDelete(c.id)}
+                            >🗑️ Delete</button>
                           </div>
 
                           {/* ── Row-level: per-comment context ── */}
@@ -299,7 +303,6 @@ export default function CommentPage() {
           )}
 
           <div className="cp-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <DashboardCapture />
             <button 
               className="cp-btn-primary" 
               onClick={handleSave} 
@@ -308,6 +311,7 @@ export default function CommentPage() {
             >
               {editingId ? 'Save Changes' : 'Post Comment'}
             </button>
+            <DashboardCapture />
             <button 
               className="cp-btn-ai" 
               onClick={handleAiRewrite} 

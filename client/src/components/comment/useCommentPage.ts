@@ -5,7 +5,7 @@ import {
   uid, stripHtml, buildSummary,
   generateAi, buildAiPreviewHtml,
 } from '../api/commentUtils';
-import { fetchComments, saveComment, cacheComments, buildFilterStr } from '../api/commentApi';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr } from '../api/commentApi';
 
 
 export function useCommentPage() {
@@ -144,6 +144,17 @@ export function useCommentPage() {
     setActiveTab('comments');
   };
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+
+    await deleteComment(id);
+    const updated = comments.filter(c => c.id !== id);
+    setComments(updated);
+    cacheComments(filterStr, updated);
+    addToast('ok', 'Comment deleted.');
+    if (editingId === id) resetPost();
+  };
+
   const resetPost = () => {
     setEditorHtml('');
     setEditorKey(k => k + 1);
@@ -231,6 +242,7 @@ export function useCommentPage() {
     /* handlers */
     handleSave,
     handleEdit,
+    handleDelete,
     resetPost,
     openSummary,
     handleAiRewrite,

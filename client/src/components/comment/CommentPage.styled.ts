@@ -364,6 +364,20 @@ export const EditButton = styled.button`
   }
 `;
 
+export const DeleteButton = styled.button`
+  background: transparent;
+  border: none;
+  color: ${({ theme }) => theme.textSecondary};
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 8px;
+  
+  &:hover {
+    text-decoration: underline;
+    color: ${({ theme }) => theme.errorText};
+  }
+`;
+
 export const CommentFiltersContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
