@@ -18,7 +18,7 @@
     "dev": "concurrently -n server,client -c red,cyan \"npm run dev:server\" \"npm run dev:client\"",
     "build:client": "cd client && npm run build",
     "build": "npm run build:client && cd client && cp -r dist ../server/",
-    "start": "npm run build:client:copy && npm run dev:server",
+    "start": "npm run build && npm run dev:server",
     "lint:client": "cd client && eslint .",
     "preview:client": "cd client && vite preview",
     "deploy": "sh -c 'V=${1:-v1}; cd server && docker build -t sac-commenting-server:$V . && docker tag sac-commenting-server:$V europe-west1-docker.pkg.dev/vf-grp-aib-dev-dna-sbx-alpha/gcf-artifacts/sac-commenting-server:$V && docker push europe-west1-docker.pkg.dev/vf-grp-aib-dev-dna-sbx-alpha/gcf-artifacts/sac-commenting-server:$V' --"

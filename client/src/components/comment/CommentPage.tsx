@@ -2,7 +2,6 @@ import React from 'react';
 import RichTextEditor from '../helper/RichTextEditor';
 import ToastContainer from '../ui/ToastContainer';
 import SkeletonCard from '../ui/SkeletonCard';
-import DashboardCapture from '../ai_integration/DashboardCapture';
 import { useCommentPage } from './useCommentPage';
 import { groupByDate, formatTs, getInitials, stripHtml } from '../api/commentUtils';
 import type { Comment } from '../../types';
@@ -21,16 +20,16 @@ const IconPen     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="
 /* ─── Filter Parsing Logic ──────────────────────────────── */
 function parseFilterString(filterStr: string) {
   if (!filterStr || filterStr === 'DefaultContext') return [];
-  return filterStr.split(';').filter(Boolean).map(part => {
-    const sepIndex = part.indexOf(':');
-    if (sepIndex === -1) return { key: 'Context', val: part.trim() };
-    return { key: part.substring(0, sepIndex).trim(), val: part.substring(sepIndex + 1).trim() };
+  return filterStr.split(/[;,?\/\s]+/).filter(s => s.trim()).map(segment => {
+    const sepIndex = segment.indexOf(':');
+    if (sepIndex === -1) return { key: 'Context', val: segment.trim() };
+    const key = segment.substring(0, sepIndex).trim();
+    const val = segment.substring(sepIndex + 1).trim();
+    return { key: key || 'Context', val };
   });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CommentPage — JSX only. All logic lives in useCommentPage.
-   ═══════════════════════════════════════════════════════════ */
+  
 export default function CommentPage() {
   const {
     activeTab, setActiveTab,
@@ -49,7 +48,7 @@ export default function CommentPage() {
     aiMode, wordSugs, sentSugs, aiHtml,
     visibleComments,
     newCommentCount,
-    handleSave, handleEdit, handleDelete, resetPost,
+    handleSave, handleEdit, resetPost, handleDelete,
     openSummary,
     handleAiRewrite,
     applyWordChoice, acceptAllAi, applySentence,
@@ -113,6 +112,13 @@ export default function CommentPage() {
                 id="level-row"
               >≡ Row</button>
             </div>
+            <button 
+              className="cp-level-btn"
+              style={{ fontSize: '10px', opacity: 0.7, margin: '0 8px 0 auto' }}
+              onClick={() => window.postMessage("Region:APAC;Country:India;UserID:DemoUser", "*")}
+            >
+              🛠️ Test SAC Filter
+            </button>
             <button 
               className="cp-summarise-btn" 
               onClick={openSummary} 
@@ -303,6 +309,7 @@ export default function CommentPage() {
           )}
 
           <div className="cp-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+
             <button 
               className="cp-btn-primary" 
               onClick={handleSave} 
@@ -311,24 +318,21 @@ export default function CommentPage() {
             >
               {editingId ? 'Save Changes' : 'Post Comment'}
             </button>
-            <DashboardCapture />
+            <button 
+              className="cp-btn-ghost" 
+              onClick={resetPost}
+              style={{ background: 'linear-gradient(135deg, #C8102E, #0f1f6e)', color: 'white', border: 'none' }}
+            >
+              Cancel
+            </button>
             <button 
               className="cp-btn-ai" 
               onClick={handleAiRewrite} 
               disabled={!editorHtml || stripHtml(editorHtml).length < 5} 
               id="btn-ai-rewrite"
             >
-              ✨ Rewrite with AI
+              ✨ Generate Comment
             </button>
-            {editingId && (
-              <button 
-                className="cp-btn-ghost" 
-                onClick={resetPost}
-                style={{ background: 'linear-gradient(135deg, #C8102E, #0f1f6e)', color: 'white', border: 'none' }}
-              >
-                Cancel
-              </button>
-            )}
           </div>
         </div>
       )}
