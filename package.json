@@ -17,7 +17,7 @@
     "dev:client": "cd client && npm run dev",
     "dev": "concurrently -n server,client -c red,cyan \"npm run dev:server\" \"npm run dev:client\"",
     "build:client": "cd client && npm run build",
-    "build:client:copy": "npm run build:client && cd client && cp -r dist ../server/",
+    "build": "npm run build:client && cd client && cp -r dist ../server/",
     "start": "npm run build:client:copy && npm run dev:server",
     "lint:client": "cd client && eslint .",
     "preview:client": "cd client && vite preview",
