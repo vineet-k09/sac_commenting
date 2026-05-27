@@ -10,6 +10,7 @@ export var PROJECT_ID = process.env.PROJECT_ID;
 console.log("Project ID:", PROJECT_ID);
 
 import commentingRoutes from './src/modules/commenting/commenting.routes';
+import generationRoutes from './src/modules/generation/generation.routes';
 
 const app = express(); // returns express app instance - like returning a new instance of a class
 
@@ -45,6 +46,7 @@ app.use(express.urlencoded({ extended: true })); // %20
 
 const apiRouter = express.Router();
 apiRouter.use('/', commentingRoutes); // /api/comment/add , /api/comment/getAll, etc.
+apiRouter.use('/', generationRoutes);
 // apiRouter.use('/', commentingRoutes); // /api/user/add , /api/comment/fetch, etc. 404, 405
 app.use('/api', apiRouter);
 
@@ -79,3 +81,9 @@ const shutdown = (signal: string) => {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+
+/*
+<iframe 
+  src="https://sac-commenting-..." 
+  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+*/

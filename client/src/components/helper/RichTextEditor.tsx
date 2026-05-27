@@ -127,10 +127,10 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   ];
 
   const alignTools: { label: React.ReactNode; cmd: FormatCmd; title: string }[] = [
-    { label: '⬛L', cmd: 'justifyLeft',   title: 'Align Left' },
-    { label: '⬛C', cmd: 'justifyCenter', title: 'Align Center' },
-    { label: '⬛R', cmd: 'justifyRight',  title: 'Align Right' },
-    { label: '⬛J', cmd: 'justifyFull',   title: 'Justify' },
+    { label: <span className="rte-icon">⇤</span>, cmd: 'justifyLeft',   title: 'Align Left' },
+    { label: <span className="rte-icon">↔</span>, cmd: 'justifyCenter', title: 'Align Center' },
+    { label: <span className="rte-icon">⇥</span>, cmd: 'justifyRight',  title: 'Align Right' },
+    { label: <span className="rte-icon">≡</span>, cmd: 'justifyFull',   title: 'Justify' },
   ];
 
   const listTools: { label: React.ReactNode; cmd: FormatCmd; title: string }[] = [
@@ -231,16 +231,16 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
             <button
               type="button"
               title="Highlight color"
-              className="rte-btn rte-color-trigger"
+              className="rte-btn rte-color-trigger rte-btn--highlight"
               onMouseDown={(e) => {
                 e.preventDefault();
                 setShowHighlightPicker(v => !v);
                 setShowColorPicker(false);
               }}
             >
-              <span className="rte-color-icon">
-                🖊️
-                <span className="rte-color-bar" style={{
+              <span className="rte-highlight-icon">
+                <span className="rte-highlight-letter">A</span>
+                <span className="rte-highlight-bar" style={{
                   background: highlightColor === 'transparent' ? 'repeating-linear-gradient(45deg,#e2e8f0 0,#e2e8f0 2px,transparent 2px,transparent 6px)' : highlightColor
                 }} />
               </span>
