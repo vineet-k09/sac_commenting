@@ -50,9 +50,24 @@ export function useCommentPage() {
   /* ── SAC postMessage listener ────────────────────────────── */
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (typeof e.data !== 'string') return;
+      // Open to all origins to accept context from any source
+      const data = e.data;
+      if (!data) return;
+
+      // Robust handling for both object and string message formats
+      if (typeof data === 'object' && !Array.isArray(data)) {
+        Object.entries(data).forEach(([k, v]) => {
+          const key = String(k);
+          const val = String(v);
+          if (key.toLowerCase() === 'username' || key.toLowerCase() === 'userid') setUser(val);
+          else setFilters(prev => ({ ...prev, [key]: val }));
+        });
+        return;
+      }
+
+      if (typeof data !== 'string') return;
       // Accept multiple separators (";", "?", and "|") and both "key:value" and "key value" formats
-      e.data.split(/[;?|]/).forEach((part: string) => {
+      data.split(/[;?|]/).forEach((part: string) => {
         const raw = part.trim();
         if (!raw) return;
 
