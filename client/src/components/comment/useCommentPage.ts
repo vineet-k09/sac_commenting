@@ -49,35 +49,50 @@ export function useCommentPage() {
   const [sentSugs, setSentSugs] = useState<SentSug[]>([]);
   const [aiHtml, setAiHtml] = useState('');
 
+  const parseContextString = (input: string) => {
+    const nextFilters: Record<string, string> = {};
+    let nextUser = '';
+
+    input.split(/[;?]/).forEach((part: string) => {
+      const raw = part.trim();
+      if (!raw) return;
+
+      let k: string | null = null;
+      let v: string | null = null;
+
+      if (raw.includes(':')) {
+        const sep = raw.indexOf(':');
+        k = raw.substring(0, sep).trim();
+        v = raw.substring(sep + 1).trim();
+      } else {
+        const firstSpace = raw.indexOf(' ');
+        if (firstSpace !== -1) {
+          k = raw.substring(0, firstSpace).trim();
+          v = raw.substring(firstSpace + 1).trim();
+        }
+      }
+
+      if (!k || !v) return;
+      if (k.toLowerCase() === 'username') nextUser = v;
+      else nextFilters[k] = v;
+    });
+
+    return { user: nextUser, filters: nextFilters };
+  };
+
+  const applyContextString = (input: string) => {
+    const { user: incomingUser, filters: incomingFilters } = parseContextString(input);
+    if (incomingUser) setUser(incomingUser);
+    setFilters(prev => ({ ...prev, ...incomingFilters }));
+  };
+
   /* ── SAC postMessage listener ────────────────────────────── */
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (typeof e.data !== 'string') return;
-      // Accept multiple separators (";" and "?") and both "key:value" and "key value" formats
-      e.data.split(/[;?]/).forEach((part: string) => {
-        const raw = part.trim();
-        if (!raw) return;
-
-        let k: string | null = null;
-        let v: string | null = null;
-
-        if (raw.includes(':')) {
-          const sep = raw.indexOf(':');
-          k = raw.substring(0, sep).trim();
-          v = raw.substring(sep + 1).trim();
-        } else {
-          // fallback to first whitespace-separated token as key
-          const firstSpace = raw.indexOf(' ');
-          if (firstSpace !== -1) {
-            k = raw.substring(0, firstSpace).trim();
-            v = raw.substring(firstSpace + 1).trim();
-          }
-        }
-
-        if (!k || !v) return;
-        if (k.toLowerCase() === 'username') setUser(v);
-        else setFilters(prev => ({ ...prev, [k]: v }));
-      });
+      const { user: incomingUser, filters: incomingFilters } = parseContextString(e.data);
+      if (incomingUser) setUser(incomingUser);
+      if (Object.keys(incomingFilters).length) setFilters(prev => ({ ...prev, ...incomingFilters }));
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);

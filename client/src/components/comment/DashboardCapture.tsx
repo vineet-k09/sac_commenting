@@ -49,26 +49,13 @@ const DashboardCapture: React.FC = () => {
       saveToCache(imageBlob, fileName).catch(() => {});
       openBlobInNewTab(imageBlob);
 
-      // Get signed URL from backend (placeholder endpoint relative to LB)
-      const urlResponse = await fetch('/get-upload-url', {
+      // Send screenshot to API for processing and storage
+      const formData = new FormData();
+      formData.append('file', imageBlob, fileName);
+      
+      const commentResponse = await fetch('/api/generate-comments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName })
-      });
-      const { url } = await urlResponse.json();
-
-      // Upload the image to the signed URL
-      await fetch(url, {
-        method: 'PUT',
-        body: imageBlob,
-        headers: { 'Content-Type': 'image/png' }
-      });
-
-      // Trigger comment generation (placeholder endpoint)
-      const commentResponse = await fetch('/generate-comment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_name: fileName })
+        body: formData
       });
       const data = await commentResponse.json();
       setComment(data.comment || '');
