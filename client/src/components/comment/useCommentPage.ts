@@ -53,8 +53,8 @@ export function useCommentPage() {
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (typeof e.data !== 'string') return;
-      // Accept multiple separators (";" and "?") and both "key:value" and "key value" formats
-      e.data.split(/[;?]/).forEach((part: string) => {
+      // Accept multiple separators (";", "?", and "|") and both "key:value" and "key value" formats
+      e.data.split(/[;?|]/).forEach((part: string) => {
         const raw = part.trim();
         if (!raw) return;
 
@@ -63,6 +63,10 @@ export function useCommentPage() {
 
         if (raw.includes(':')) {
           const sep = raw.indexOf(':');
+          k = raw.substring(0, sep).trim();
+          v = raw.substring(sep + 1).trim();
+        } else if (raw.includes('|')) {
+          const sep = raw.indexOf('|');
           k = raw.substring(0, sep).trim();
           v = raw.substring(sep + 1).trim();
         } else {
@@ -75,7 +79,7 @@ export function useCommentPage() {
         }
 
         if (!k || !v) return;
-        if (k.toLowerCase() === 'username') setUser(v);
+        if (k.toLowerCase() === 'username' || k.toLowerCase() === 'userid') setUser(v);
         else setFilters(prev => ({ ...prev, [k]: v }));
       });
     };

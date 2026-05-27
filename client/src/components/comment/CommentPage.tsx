@@ -22,19 +22,22 @@ const AI_FEATURES = [
 /* ─── Parse row context from a filter string ─────────────── */
 // filter examples: "Row:EMEA", "Row:APAC", "Region:APAC;Row:3"
 function parseRowContext(filter: string): { label: string; value: string; lineNum?: string } {
+  const raw = filter?.trim() ?? '';
+  if (!raw) {
+    return { label: 'Row', value: 'Unknown row context' };
+  }
   // Try to find an explicit Row: key
-  const parts = filter.split(';').map(p => p.trim());
+  const parts = raw.split(';').map(p => p.trim());
   const rowPart = parts.find(p => /^row:/i.test(p));
   if (rowPart) {
     const [, val] = rowPart.split(':');
-    // Check if value is purely numeric → treat as line/row number
-    const isNum = /^\d+$/.test(val?.trim() ?? '');
+    const trimmedVal = val?.trim() ?? '';
+    const isNum = /^\d+$/.test(trimmedVal);
     return isNum
-      ? { label: 'Row', value: val.trim(), lineNum: val.trim() }
-      : { label: 'Row', value: val?.trim() ?? rowPart };
+      ? { label: 'Row', value: trimmedVal, lineNum: trimmedVal }
+      : { label: 'Row', value: trimmedVal || rowPart };
   }
-  // Fallback: use the whole filter
-  return { label: 'Context', value: filter };
+  return { label: 'Context', value: raw };
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -73,8 +76,14 @@ export default function CommentPage() {
           <span className="cp-logo">💬</span>
           <div>
             <h1 className="cp-title">SAC Comments</h1>
-            {Object.keys(filters).length > 0 && (
+            {(user || Object.keys(filters).length > 0) && (
               <div className="cp-ctx">
+                {user && (
+                  <span className="cp-ctx-chip">
+                    <span className="cp-ctx-key">Viewing as:</span>
+                    <span className="cp-ctx-val">{user}</span>
+                  </span>
+                )}
                 {Object.entries(filters).map(([k, v]) => (
                   <span key={k} className="cp-ctx-chip">
                     <span className="cp-ctx-key">{k}:</span>
@@ -131,25 +140,6 @@ export default function CommentPage() {
             <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise">✨ Summarise</button>
           </div>
 
-          {/* ── Page-level: ONE shared SAC context box ── */}
-          {level === 'page' && Object.keys(filters).length > 0 && (
-            <div className="cp-page-ctx-box">
-              <span className="cp-page-ctx-label">📄 SAC Context</span>
-              <div className="cp-page-ctx-chips">
-                {Object.entries(filters).map(([k, v]) => (
-                  <span key={k} className="cp-page-ctx-chip">
-                    <span className="cp-page-ctx-key">{k}</span>{v}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {level === 'page' && Object.keys(filters).length === 0 && (
-            <div className="cp-page-ctx-box cp-page-ctx-box--empty">
-              <span className="cp-page-ctx-label">📄 SAC Context</span>
-              <span className="cp-page-ctx-waiting">Waiting for SAC context…</span>
-            </div>
-          )}
 
           {/* Comment cards */}
           <div className="cp-comments-list">
@@ -182,6 +172,7 @@ export default function CommentPage() {
                             <div className="cp-avatar" style={{ background: accent }}>{getInitials(c.user)}</div>
                             <div className="cp-meta">
                               <div className="cp-username-row">
+                                <span className="cp-position-label">Position</span>
                                 <span className="cp-username">{c.user}</span>
                                 <span className={`cp-level-tag cp-level-tag--${c.level}`}>
                                   {c.level === 'page' ? '📄 Page' : '≡ Row'}
@@ -194,7 +185,7 @@ export default function CommentPage() {
                           </div>
 
                           {/* ── Row-level: per-comment context badge ── */}
-                          {rowCtx && (
+                          {c.level === 'row' && rowCtx && (
                             <div className="cp-row-ctx">
                               {rowCtx.lineNum ? (
                                 <span className="cp-row-ctx-line">
@@ -207,7 +198,11 @@ export default function CommentPage() {
                                   <span className="cp-row-ctx-value">{rowCtx.value}</span>
                                 </span>
                               )}
-                              <span className="cp-row-ctx-filter-raw" title={c.filter}>{c.filter}</span>
+                              {c.filter ? (
+                                <span className="cp-row-ctx-filter-raw" title={c.filter}>{c.filter}</span>
+                              ) : (
+                                <span className="cp-row-ctx-filter-raw cp-row-ctx-empty">Row context missing</span>
+                              )}
                             </div>
                           )}
 
@@ -247,7 +242,6 @@ export default function CommentPage() {
             <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
           </div>
 
-          {/* Generate comments from a page screenshot */}
           <DashboardCapture />
 
           {/* AI diff preview */}

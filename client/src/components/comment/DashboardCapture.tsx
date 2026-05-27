@@ -49,26 +49,12 @@ const DashboardCapture: React.FC = () => {
       saveToCache(imageBlob, fileName).catch(() => {});
       openBlobInNewTab(imageBlob);
 
-      // Get signed URL from backend (placeholder endpoint relative to LB)
-      const urlResponse = await fetch('/get-upload-url', {
+      const formData = new FormData();
+      formData.append('file', imageBlob, fileName);
+      
+      const commentResponse = await fetch('/api/generate-comments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName })
-      });
-      const { url } = await urlResponse.json();
-
-      // Upload the image to the signed URL
-      await fetch(url, {
-        method: 'PUT',
-        body: imageBlob,
-        headers: { 'Content-Type': 'image/png' }
-      });
-
-      // Trigger comment generation (placeholder endpoint)
-      const commentResponse = await fetch('/generate-comment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_name: fileName })
+        body: formData
       });
       const data = await commentResponse.json();
       setComment(data.comment || '');
@@ -86,6 +72,7 @@ const DashboardCapture: React.FC = () => {
       <button className="cp-btn-ghost" onClick={handleCaptureAndUpload} disabled={isProcessing} id="btn-generate-comments">
         {isProcessing ? 'Analyzing...' : 'Generate Comments'}
       </button>
+
       {comment && (
         <div style={{ marginTop: 12, padding: 10, background: '#e7f3ff' }}>
           <h4 style={{ margin: '0 0 6px 0' }}>AI Insights:</h4>
