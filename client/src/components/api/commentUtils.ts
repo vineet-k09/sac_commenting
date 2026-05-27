@@ -71,7 +71,6 @@ function rewriteSentence(s: string): string {
 
 export function generateAi(html: string): { wordSugs: WordSug[]; sentSugs: SentSug[] } {
   const text      = stripHtml(html);
-  const tokens    = text.split(/\s+/);
   const wordSugs: WordSug[] = [];
   // Word suggestions logic removed (mockData dependency)
 

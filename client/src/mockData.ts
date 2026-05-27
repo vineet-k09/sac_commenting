@@ -1,4 +1,4 @@
-import type { Comment } from './types';
+
 
 /* ─── Avatar gradient palette ───────────────────────────── */
 export const AVATAR_COLORS = [

@@ -119,6 +119,7 @@ export const FilterItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: 4px;
+  position: relative; /* For tooltip positioning */
 `;
 
 export const FilterLabel = styled.label`
@@ -137,6 +138,39 @@ export const FilterValue = styled.div`
   color: ${({ theme }) => theme.text};
   font-size: 13px;
   font-weight: 500;
+`;
+
+export const TooltipText = styled.span`
+  visibility: hidden;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 4px;
+  padding: 5px 8px;
+  position: absolute;
+  z-index: 100; /* Ensure it's above other elements */
+  bottom: calc(100% + 5px); /* Position above the FilterItem, with a small gap */
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  white-space: nowrap; /* Prevent text wrapping */
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+  }
+
+  ${FilterItem}:hover & {
+    visibility: visible;
+    opacity: 1;
+  }
 `;
 
 // Form
