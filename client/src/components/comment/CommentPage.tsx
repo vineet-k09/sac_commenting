@@ -76,8 +76,14 @@ export default function CommentPage() {
           <span className="cp-logo">💬</span>
           <div>
             <h1 className="cp-title">SAC Comments</h1>
-            {Object.keys(filters).length > 0 && (
+            {(user || Object.keys(filters).length > 0) && (
               <div className="cp-ctx">
+                {user && (
+                  <span className="cp-ctx-chip">
+                    <span className="cp-ctx-key">Viewing as:</span>
+                    <span className="cp-ctx-val">{user}</span>
+                  </span>
+                )}
                 {Object.entries(filters).map(([k, v]) => (
                   <span key={k} className="cp-ctx-chip">
                     <span className="cp-ctx-key">{k}:</span>
@@ -179,7 +185,7 @@ export default function CommentPage() {
                           </div>
 
                           {/* ── Row-level: per-comment context badge ── */}
-                          {c.level === 'row' && (
+                          {c.level === 'row' && rowCtx && (
                             <div className="cp-row-ctx">
                               {rowCtx.lineNum ? (
                                 <span className="cp-row-ctx-line">
