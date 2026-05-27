@@ -49,7 +49,6 @@ const DashboardCapture: React.FC = () => {
       saveToCache(imageBlob, fileName).catch(() => {});
       openBlobInNewTab(imageBlob);
 
-      // Send screenshot to API for processing and storage
       const formData = new FormData();
       formData.append('file', imageBlob, fileName);
       
@@ -68,39 +67,10 @@ const DashboardCapture: React.FC = () => {
     }
   };
 
-  const handlePuppeteerCapture = async () => {
-    const sacUrl = 'https://vodafone-company-q.eu10.hcs.cloud.sap/sap/fpa/ui/tenants/ff773/app.html#/story2&/s2/DBB01807319193F64AE20D65C426E12C/?url_api=true&preview=true&mode=edit&view_id=story2';
-    
-    try {
-      // Trigger the backend Puppeteer process (non-blocking)
-      fetch('/api/puppeteer-capture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: sacUrl }),
-        referrerPolicy: 'no-referrer'
-      }).catch(err => console.error('API trigger error:', err));
-
-      // Redirect to the SAC URL with no-referrer policy using a transient link
-      const link = document.createElement('a');
-      link.href = sacUrl;
-      link.rel = 'noreferrer';
-      // Uncomment the line below if you want it to open in a new tab
-      // link.target = '_blank'; 
-      link.click();
-
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error initiating Puppeteer capture:', error);
-    }
-  };
-
   return (
-    <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div style={{ marginTop: 12 }}>
       <button className="cp-btn-ghost" onClick={handleCaptureAndUpload} disabled={isProcessing} id="btn-generate-comments">
         {isProcessing ? 'Analyzing...' : 'Generate Comments'}
-      </button>
-      <button className="cp-btn-ghost" onClick={handlePuppeteerCapture} disabled={isProcessing} id="btn-puppeteer-capture">
-        {isProcessing ? 'Running Puppeteer...' : 'Capture SAC Story (Puppeteer)'}
       </button>
 
       {comment && (

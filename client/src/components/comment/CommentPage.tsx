@@ -242,7 +242,6 @@ export default function CommentPage() {
             <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
           </div>
 
-          {/* Generate comments from a page screenshot */}
           <DashboardCapture />
 
           {/* AI diff preview */}
