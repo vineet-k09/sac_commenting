@@ -16,7 +16,6 @@ export async function createComment(
     filter: string
 ){
     const id = randomUUID();
-    const timestamp = new Date().toISOString();
 
     const query = `
         INSERT INTO ${getTable()}
@@ -66,15 +65,17 @@ export async function deleteComment(id: string){
     return res;
 }
 
-export async function putComment(id: string, user: string, content: string, level: CommentLevel, filter: string){
+export async function putComment(id: string, user: string, content: string, level: CommentLevel, filter: string, username: string){
     const query = 
     `UPDATE ${getTable()} 
     SET user = @user, 
     content = @content, 
     level = @level, 
-    filter = @filter 
+    filter = @filter,
+    modified_by = @username,
+    modified_at = CURRENT_TIMESTAMP() 
     WHERE id = @id`;
-    const queryParams = { id, user, content, level, filter };
+    const queryParams = { id, user, content, level, filter, username};
     const res = await bq.query(query, queryParams);
     return res;
 }

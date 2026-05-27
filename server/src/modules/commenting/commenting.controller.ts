@@ -5,7 +5,7 @@ import { handleCreateComment, handleGetComments, handleDeleteComment, handlePutC
 // controller -> failure, request, resposnse, status code API
 export async function createComment(req: any, res: Response) {
     try {
-        const result = await handleCreateComment(req.body);
+        const result = await handleCreateComment(req.body, req.body?.username);
         res.status(result.success ? 201 : 500).json(result); // 201 Created, 200 suceess
     } catch (error: any) {
         console.error("Error creating comment:", error);
@@ -38,7 +38,7 @@ export async function deleteComment(req: any, res: Response) {
 export async function putComment(req: any, res: Response) {
     try {
         const id = req.params?.id;
-        const result = await handlePutComment(id, req.body);
+        const result = await handlePutComment(id, req.body, req.body?.username);
         res.status(result.success ? 201 : 500).json(result);
     } catch(   error: any) {
         console.error("Error updating comment:", error);

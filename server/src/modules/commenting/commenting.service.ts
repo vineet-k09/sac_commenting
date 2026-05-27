@@ -1,9 +1,9 @@
 import { getComments, createComment, deleteComment, putComment } from "./commenting.repo";
 import { Comment } from "./commenting.types";
 
-export async function handleCreateComment(data: Comment){
+export async function handleCreateComment(data: Comment, username?: string){
     const { user, content, level, filter } = data;
-    const res = await createComment(user, content, level, filter);
+    const res = await createComment(username || user, content, level, filter);
     return res;
 }
 
@@ -17,9 +17,9 @@ export async function handleDeleteComment(id: string){
     return res;
 }
 
-export async function handlePutComment(id: string, data: Comment){
+export async function handlePutComment(id: string, data: Comment, username?: string){
     const {user, content, level, filter} = data;
-    const res = await putComment(id, user, content, level, filter);
+    const res = await putComment(id, user, content, level, filter, username || user);
     return res;
 }
 
