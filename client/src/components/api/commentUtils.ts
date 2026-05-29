@@ -1,5 +1,5 @@
-import type { Comment, CommentLevel, WordSug, SentSug, DateGroup } from './types';
-import { WORD_MAP, AI_SUMMARY_THEMES } from './mockData';
+import type { Comment, CommentLevel, WordSug, SentSug, DateGroup } from '../../types';
+
 
 /* ─── General utilities ─────────────────────────────────── */
 export const uid = (): string => crypto.randomUUID();
@@ -71,15 +71,8 @@ function rewriteSentence(s: string): string {
 
 export function generateAi(html: string): { wordSugs: WordSug[]; sentSugs: SentSug[] } {
   const text      = stripHtml(html);
-  const tokens    = text.split(/\s+/);
   const wordSugs: WordSug[] = [];
-
-  tokens.forEach((tok, i) => {
-    const clean = tok.toLowerCase().replace(/[^a-z]/g, '');
-    if (WORD_MAP[clean]) {
-      wordSugs.push({ wordIdx: i, original: tok, alts: WORD_MAP[clean], chosen: null });
-    }
-  });
+  // Word suggestions logic removed (mockData dependency)
 
   const sentences = text.match(/[^.!?]+[.!?]*/g) ?? [text];
   const sentSugs: SentSug[] = sentences
@@ -106,11 +99,11 @@ export function buildSummary(comments: Comment[], level: CommentLevel): string {
   if (!filtered.length) return 'No comments found for this level.';
   const names  = [...new Set(filtered.map(c => c.user))];
   const words  = filtered.map(c => stripHtml(c.content)).join(' ').split(/\s+/).length;
-  const picked = AI_SUMMARY_THEMES.slice(0, Math.min(3, Math.ceil(filtered.length / 2)));
+
   return (
     `${filtered.length} ${level}-level comment${filtered.length > 1 ? 's' : ''} ` +
     `from ${names.slice(0, 3).join(', ')}${names.length > 3 ? ` and ${names.length - 3} others` : ''}. ` +
-    `Spanning ~${words} words, the discussion centres on ${picked.join(', ')}. ` +
+    `Spanning ~${words} words. ` +
     `Key takeaway: contributors broadly align on the ${level === 'page' ? 'overall dashboard narrative' : 'row-level data interpretation'}, ` +
     `with some diverging views on attribution and forward projections. ` +
     `Recommended action: review flagged variances and consolidate insights before the next reporting cycle.`

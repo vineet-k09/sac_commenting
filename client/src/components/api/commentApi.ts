@@ -1,4 +1,4 @@
-import type { Comment } from './types';
+import type { Comment } from '../../types';
 
 const API_BASE = '/api/comment';
 const CACHE_KEY = (filter: string) => `c_${filter}`;
@@ -35,9 +35,29 @@ export async function saveComment(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(comment),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  } catch {
-    // Silently fall back — caller updates local state optimistically
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+  } catch (err) {
+    console.error("Save error:", err);
+    throw err;
+  }
+}
+
+/* ─── Delete a comment ─────────────────────────────────── */
+export async function deleteComment(id: string): Promise<void> {
+  try {
+    const res = await fetch(`${API_BASE}/${id}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || `HTTP ${res.status}`);
+    }
+  } catch (err) {
+    throw err;
   }
 }
 

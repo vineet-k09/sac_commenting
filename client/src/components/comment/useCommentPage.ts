@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
 import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../../types';
-import { SAMPLE_COMMENTS } from '../../mockData';
 import {
   uid, stripHtml, buildSummary,
   generateAi, buildAiPreviewHtml,
-} from '../../commentUtils';
-import { fetchComments, saveComment, cacheComments, buildFilterStr } from '../../commentApi';
-
+} from '../api/commentUtils';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr } from '../api/commentApi';
 
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
   const [activeTab, setActiveTab] = useState<ActiveTab>('comments');
   const [level, setLevel] = useState<CommentLevel>('page');
-  const [comments, setComments] = useState<Comment[]>(SAMPLE_COMMENTS);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [user, setUser] = useState('');
   const [editorHtml, setEditorHtml] = useState('');
   const [editorKey, setEditorKey] = useState(0);
@@ -52,36 +50,29 @@ export function useCommentPage() {
   /* ── SAC postMessage listener ────────────────────────────── */
   useEffect(() => {
     const handler = (e: MessageEvent) => {
-      if (typeof e.data !== 'string') return;
-      // Accept multiple separators (";", "?", and "|") and both "key:value" and "key value" formats
-      e.data.split(/[;?|]/).forEach((part: string) => {
-        const raw = part.trim();
-        if (!raw) return;
-
-        let k: string | null = null;
-        let v: string | null = null;
-
-        if (raw.includes(':')) {
-          const sep = raw.indexOf(':');
-          k = raw.substring(0, sep).trim();
-          v = raw.substring(sep + 1).trim();
-        } else if (raw.includes('|')) {
-          const sep = raw.indexOf('|');
-          k = raw.substring(0, sep).trim();
-          v = raw.substring(sep + 1).trim();
-        } else {
-          // fallback to first whitespace-separated token as key
-          const firstSpace = raw.indexOf(' ');
-          if (firstSpace !== -1) {
-            k = raw.substring(0, firstSpace).trim();
-            v = raw.substring(firstSpace + 1).trim();
+      const data = e.data;
+      if (!data || typeof data !== 'string') return;
+      
+      const newFilters: Record<string, string> = {};
+      
+      // Split by entry delimiters: ; , ? / and whitespace
+      data.split(/[;,?\/\s]+/).filter(Boolean).forEach(segment => {
+        const sepIndex = segment.indexOf(':');
+        if (sepIndex !== -1) {
+          const k = segment.substring(0, sepIndex).trim();
+          const v = segment.substring(sepIndex + 1).trim();
+          
+          if (k.toLowerCase() === 'username' || k.toLowerCase() === 'userid') {
+            setUser(v);
+          } else if (k) {
+            newFilters[k] = v;
           }
         }
-
-        if (!k || !v) return;
-        if (k.toLowerCase() === 'username' || k.toLowerCase() === 'userid') setUser(v);
-        else setFilters(prev => ({ ...prev, [k]: v }));
       });
+
+      if (Object.keys(newFilters).length > 0) {
+        setFilters(prev => ({ ...prev, ...newFilters }));
+      }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
@@ -92,7 +83,7 @@ export function useCommentPage() {
     const fs = buildFilterStr(filters) ?? 'DefaultContext';
     setIsLoading(true);
     fetchComments(fs).then(data => {
-      if (data.length) setComments(data);
+      setComments(data);
     }).finally(() => {
       setTimeout(() => setIsLoading(false), 600);
     });
@@ -118,17 +109,21 @@ export function useCommentPage() {
       timestamp: new Date().toISOString(),
     };
 
-    await saveComment(payload, !!editingId);
+    try {
+      await saveComment(payload, !!editingId);
 
-    const updated = editingId
-      ? comments.map(c => (c.id === editingId ? payload : c))
-      : [payload, ...comments];
+      const updated = editingId
+        ? comments.map(c => (c.id === editingId ? payload : c))
+        : [payload, ...comments];
 
-    setComments(updated);
-    cacheComments(filterStr, updated);
-    addToast('ok', editingId ? 'Comment updated!' : 'Comment posted!');
-    resetPost();
-    setActiveTab('comments');
+      setComments(updated);
+      cacheComments(filterStr, updated);
+      addToast('ok', editingId ? 'Comment updated!' : 'Comment posted!');
+      resetPost();
+      setActiveTab('comments');
+    } catch (err) {
+      addToast('err', `Failed to save: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
 
   const resetPost = () => {
@@ -148,6 +143,19 @@ export function useCommentPage() {
     setActiveTab('post');
   };
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    try {
+      await deleteComment(id);
+      const updated = comments.filter(c => c.id !== id);
+      setComments(updated);
+      cacheComments(filterStr, updated);
+      addToast('ok', 'Comment deleted.');
+      if (editingId === id) resetPost();
+    } catch (err) {
+      addToast('err', 'Failed to delete comment.');
+    }
+  };
 
   /* ── Summary drawer ──────────────────────────────────────── */
   const openSummary = () => {
@@ -218,6 +226,7 @@ export function useCommentPage() {
     /* handlers */
     handleSave,
     handleEdit,
+    handleDelete,
     resetPost,
     openSummary,
     handleAiRewrite,

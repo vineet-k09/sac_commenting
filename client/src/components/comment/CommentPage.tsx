@@ -2,47 +2,34 @@ import React from 'react';
 import RichTextEditor from '../helper/RichTextEditor';
 import ToastContainer from '../ui/ToastContainer';
 import SkeletonCard from '../ui/SkeletonCard';
-import DashboardCapture from './DashboardCapture';
 import { useCommentPage } from './useCommentPage';
-import { groupByDate, formatTs, getInitials, stripHtml } from '../../commentUtils';
+import { groupByDate, formatTs, getInitials, stripHtml } from '../api/commentUtils';
 import type { Comment } from '../../types';
-import { AVATAR_COLORS } from '../../mockData';
 import './CommentPage.css';
+
+/* ─── Constants ──────────────────────────────────────────── */
+const AVATAR_COLORS = [
+  '#FF5733', '#33FF57', '#3357FF', '#FF33F0', '#F0FF33', '#33F0FF',
+  '#FF8C33', '#33FF8C', '#8C33FF', '#FF338C', '#8CFF33', '#338CFF',
+];
 
 /* ─── Inline SVG Icons ───────────────────────────────────── */
 const IconChat    = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
 const IconPen     = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>;
 
-const AI_FEATURES = [
-  { icon: '📊', title: 'Data Q&A',        desc: 'Ask natural language questions about the numbers on screen' },
-  { icon: '🔍', title: 'Trend Analysis',   desc: 'Identify patterns, outliers, and variances automatically' },
-  { icon: '📝', title: 'Comment Insights', desc: 'Summarise and cross-reference all comments on this page' },
-];
-
-/* ─── Parse row context from a filter string ─────────────── */
-// filter examples: "Row:EMEA", "Row:APAC", "Region:APAC;Row:3"
-function parseRowContext(filter: string): { label: string; value: string; lineNum?: string } {
-  const raw = filter?.trim() ?? '';
-  if (!raw) {
-    return { label: 'Row', value: 'Unknown row context' };
-  }
-  // Try to find an explicit Row: key
-  const parts = raw.split(';').map(p => p.trim());
-  const rowPart = parts.find(p => /^row:/i.test(p));
-  if (rowPart) {
-    const [, val] = rowPart.split(':');
-    const trimmedVal = val?.trim() ?? '';
-    const isNum = /^\d+$/.test(trimmedVal);
-    return isNum
-      ? { label: 'Row', value: trimmedVal, lineNum: trimmedVal }
-      : { label: 'Row', value: trimmedVal || rowPart };
-  }
-  return { label: 'Context', value: raw };
+/* ─── Filter Parsing Logic ──────────────────────────────── */
+function parseFilterString(filterStr: string) {
+  if (!filterStr || filterStr === 'DefaultContext') return [];
+  return filterStr.split(/[;,?\/\s]+/).filter(s => s.trim()).map(segment => {
+    const sepIndex = segment.indexOf(':');
+    if (sepIndex === -1) return { key: 'Context', val: segment.trim() };
+    const key = segment.substring(0, sepIndex).trim();
+    const val = segment.substring(sepIndex + 1).trim();
+    return { key: key || 'Context', val };
+  });
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CommentPage — JSX only. All logic lives in useCommentPage.
-   ═══════════════════════════════════════════════════════════ */
+  
 export default function CommentPage() {
   const {
     activeTab, setActiveTab,
@@ -61,7 +48,7 @@ export default function CommentPage() {
     aiMode, wordSugs, sentSugs, aiHtml,
     visibleComments,
     newCommentCount,
-    handleSave, handleEdit, resetPost,
+    handleSave, handleEdit, resetPost, handleDelete,
     openSummary,
     handleAiRewrite,
     applyWordChoice, acceptAllAi, applySentence,
@@ -76,57 +63,37 @@ export default function CommentPage() {
           <span className="cp-logo">💬</span>
           <div>
             <h1 className="cp-title">SAC Comments</h1>
-            {(user || Object.keys(filters).length > 0) && (
-              <div className="cp-ctx">
-                {user && (
-                  <span className="cp-ctx-chip">
-                    <span className="cp-ctx-key">Viewing as:</span>
-                    <span className="cp-ctx-val">{user}</span>
-                  </span>
-                )}
-                {Object.entries(filters).map(([k, v]) => (
-                  <span key={k} className="cp-ctx-chip">
-                    <span className="cp-ctx-key">{k}:</span>
-                    <span className="cp-ctx-val">{v}</span>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       {/* ── Tabs ── */}
       <div className="cp-tabs">
-        <button className={`cp-tab${activeTab === 'comments' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('comments')} id="tab-comments">
+        <button 
+          className={`cp-tab${activeTab === 'comments' ? ' cp-tab--active' : ''}`} 
+          onClick={() => setActiveTab('comments')} 
+          id="tab-comments"
+        >
           <IconChat /> Comments
           <span className="cp-tab-badge">{visibleComments.length}</span>
           {newCommentCount > 0 && <span className="cp-tab-dot" />}
         </button>
-        <button className={`cp-tab${activeTab === 'post' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('post')} id="tab-post">
+        <button 
+          className={`cp-tab${activeTab === 'post' ? ' cp-tab--active' : ''}`} 
+          onClick={() => setActiveTab('post')} 
+          id="tab-post"
+        >
           <IconPen /> {editingId ? 'Editing' : 'Post'}
         </button>
 
-        <button className={`cp-tab${activeTab === 'ai' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('ai')} id="tab-ai">
+        <button 
+          className={`cp-tab${activeTab === 'ai' ? ' cp-tab--active' : ''}`} 
+          onClick={() => setActiveTab('ai')} 
+          id="tab-ai"
+        >
           ✨ Ask AI
         </button>
       </div>
-
-      {/* ── Context Breadcrumb ── */}
-      {(activeTab === 'comments' || activeTab === 'post') && (
-        <div className="cp-breadcrumb">
-          <span className="cp-breadcrumb-level">{level === 'page' ? '📄 Page Level' : '≡ Row Level'}</span>
-          {Object.entries(filters).map(([k, v]) => (
-            <span key={k} className="cp-breadcrumb-chip">
-              <span className="cp-breadcrumb-key">{k}:</span>
-              <span className="cp-breadcrumb-val">{v}</span>
-            </span>
-          ))}
-          {Object.keys(filters).length === 0 && (
-            <span className="cp-breadcrumb-empty">Waiting for SAC context…</span>
-          )}
-        </div>
-      )}
 
       {/* ══════════ COMMENTS TAB ══════════ */}
       {activeTab === 'comments' && (
@@ -134,11 +101,43 @@ export default function CommentPage() {
           {/* Level toggle + summarise */}
           <div className="cp-toolbar">
             <div className="cp-level-toggle">
-              <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')} id="level-page">📄 Page</button>
-              <button className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} onClick={() => setLevel('row')}  id="level-row">≡ Row</button>
+              <button 
+                className={`cp-level-btn${level === 'page' ? ' active' : ''}`} 
+                onClick={() => setLevel('page')} 
+                id="level-page"
+              >📄 Page</button>
+              <button 
+                className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} 
+                onClick={() => setLevel('row')}  
+                id="level-row"
+              >≡ Row</button>
             </div>
-            <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise">✨ Summarise</button>
+            <button 
+              className="cp-level-btn"
+              style={{ fontSize: '10px', opacity: 0.7, margin: '0 8px 0 auto' }}
+              onClick={() => window.postMessage("Region:APAC;Country:India;UserID:DemoUser", "*")}
+            >
+              🛠️ Test SAC Filter
+            </button>
+            <button 
+              className="cp-summarise-btn" 
+              onClick={openSummary} 
+              id="btn-summarise"
+            >✨ Summarise</button>
           </div>
+
+          {/* ── SAC Context Breadcrumb ── */}
+          {Object.keys(filters).length > 0 && (
+            <div className="cp-breadcrumb" style={{ margin: '0 0 8px 0', border: '1.5px solid var(--border)', borderRadius: '8px' }}>
+              <span className="cp-breadcrumb-level">SAC Context:</span>
+              {Object.entries(filters).map(([k, v]) => (
+                <span key={k} className="cp-breadcrumb-chip">
+                  <span className="cp-breadcrumb-key">{k}:</span>
+                  <span className="cp-breadcrumb-val">{v}</span>
+                </span>
+              ))}
+            </div>
+          )}
 
 
           {/* Comment cards */}
@@ -149,7 +148,10 @@ export default function CommentPage() {
               <div className="cp-empty">
                 <div className="cp-empty-icon">💬</div>
                 <p>No {level}-level comments yet.</p>
-                <button className="cp-link-btn" onClick={() => setActiveTab('post')}>Be the first to add one →</button>
+                <button 
+                  className="cp-link-btn" 
+                  onClick={() => setActiveTab('post')}
+                >Be the first to add one →</button>
               </div>
             ) : (
               groupByDate(visibleComments).map(({ label, items }) => (
@@ -159,12 +161,16 @@ export default function CommentPage() {
                     const { relative, absolute } = formatTs(c.timestamp);
                     const accent  = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const isNew   = new Date(c.timestamp) > lastOpened;
-                    const rowCtx  = c.level === 'row' ? parseRowContext(c.filter) : null;
+                    const parsedFilters = parseFilterString(c.filter);
+                    
                     return (
                       <div
                         key={c.id}
                         className={`cp-card${isNew ? ' cp-card--new' : ''}${c.level === 'row' ? ' cp-card--row' : ''}`}
-                        style={{ '--accent': c.level === 'row' ? 'linear-gradient(180deg,#dc2626,#b91c1c)' : 'linear-gradient(180deg,#0f1f6e,#1e56c8)', animationDelay: `${i * 0.05}s` } as React.CSSProperties}
+                        style={{ 
+                          '--accent': c.level === 'row' ? 'linear-gradient(180deg,#C8102E,#0f1f6e)' : 'linear-gradient(180deg,#0f1f6e,#1e56c8)', 
+                          animationDelay: `${i * 0.05}s` 
+                        } as React.CSSProperties}
                       >
                         <div className="cp-card-accent" />
                         <div className="cp-card-body">
@@ -172,37 +178,32 @@ export default function CommentPage() {
                             <div className="cp-avatar" style={{ background: accent }}>{getInitials(c.user)}</div>
                             <div className="cp-meta">
                               <div className="cp-username-row">
-                                <span className="cp-position-label">Position</span>
                                 <span className="cp-username">{c.user}</span>
-                                <span className={`cp-level-tag cp-level-tag--${c.level}`}>
-                                  {c.level === 'page' ? '📄 Page' : '≡ Row'}
-                                </span>
                                 {isNew && <span className="cp-new-badge">New</span>}
                               </div>
                               <span className="cp-ts" title={absolute}>{relative} · {absolute}</span>
                             </div>
-                            <button className="cp-edit-btn" onClick={() => handleEdit(c)}>✏️ Edit</button>
+                            <button 
+                              className="cp-edit-btn" 
+                              onClick={() => handleEdit(c)}
+                            >✏️ Edit</button>
+                            <button 
+                              className="cp-delete-btn" 
+                              onClick={() => handleDelete(c.id)}
+                            >🗑️ Delete</button>
                           </div>
 
-                          {/* ── Row-level: per-comment context badge ── */}
-                          {c.level === 'row' && rowCtx && (
+                          {/* ── Row-level: per-comment context ── */}
+                          {c.level === 'row' && (
                             <div className="cp-row-ctx">
-                              {rowCtx.lineNum ? (
-                                <span className="cp-row-ctx-line">
-                                  <span className="cp-row-ctx-hash">#</span>{rowCtx.lineNum}
-                                </span>
-                              ) : (
-                                <span className="cp-row-ctx-badge">
-                                  <span className="cp-row-ctx-icon">≡</span>
-                                  <span className="cp-row-ctx-label">{rowCtx.label}</span>
-                                  <span className="cp-row-ctx-value">{rowCtx.value}</span>
-                                </span>
-                              )}
-                              {c.filter ? (
-                                <span className="cp-row-ctx-filter-raw" title={c.filter}>{c.filter}</span>
-                              ) : (
-                                <span className="cp-row-ctx-filter-raw cp-row-ctx-empty">Row context missing</span>
-                              )}
+                              <span className="cp-row-ctx-icon">≡</span>
+                              <div className="cp-page-ctx-chips" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                                {parsedFilters.map((f, idx) => (
+                                  <span key={idx} className="cp-page-ctx-chip" style={{ fontSize: '10px', padding: '1px 6px' }}>
+                                    <span className="cp-page-ctx-key">{f.key}</span>{f.val}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           )}
 
@@ -222,18 +223,24 @@ export default function CommentPage() {
       {activeTab === 'post' && (
         <div className="cp-panel">
           <div className="cp-field">
-            <label className="cp-label">Posting as</label>
+            <label className="cp-label">Posting as (User ID)</label>
             <div className="cp-user-badge">
               <span className="cp-user-dot" />
-              <span>{user || 'Waiting for SAC context…'}</span>
+              <span style={{ fontWeight: 700 }}>{user || 'Waiting for SAC context…'}</span>
             </div>
           </div>
 
           <div className="cp-field">
             <label className="cp-label">Comment Level</label>
             <div className="cp-level-toggle">
-              <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')}>📄 Page</button>
-              <button className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} onClick={() => setLevel('row')}>≡ Row</button>
+              <button 
+                className={`cp-level-btn${level === 'page' ? ' active' : ''}`} 
+                onClick={() => setLevel('page')}
+              >📄 Page</button>
+              <button 
+                className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} 
+                onClick={() => setLevel('row')}
+              >≡ Row</button>
             </div>
           </div>
 
@@ -242,14 +249,15 @@ export default function CommentPage() {
             <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
           </div>
 
-          <DashboardCapture />
-
           {/* AI diff preview */}
           {aiMode && (
             <div className="cp-ai-panel">
               <div className="cp-ai-header">
                 <span className="cp-ai-badge">✨ AI Rewrite Suggestions</span>
-                <button className="cp-link-btn" onClick={resetPost}>✕ Cancel</button>
+                <button 
+                  className="cp-link-btn" 
+                  onClick={resetPost}
+                >✕ Cancel</button>
               </div>
               <div className="cp-ai-preview" dangerouslySetInnerHTML={{ __html: aiHtml }} />
               {wordSugs.length > 0 && (
@@ -261,7 +269,11 @@ export default function CommentPage() {
                         <span className="cp-word-orig">{w.original}</span>
                         <span className="cp-word-arrow">→</span>
                         {w.alts.map(alt => (
-                          <button key={alt} className={`cp-word-alt${w.chosen === alt ? ' chosen' : ''}`} onClick={() => applyWordChoice(i, alt)}>{alt}</button>
+                          <button 
+                            key={alt} 
+                            className={`cp-word-alt${w.chosen === alt ? ' chosen' : ''}`} 
+                            onClick={() => applyWordChoice(i, alt)}
+                          >{alt}</button>
                         ))}
                       </div>
                     ))}
@@ -275,26 +287,52 @@ export default function CommentPage() {
                     <div key={i} className="cp-sent-card">
                       <p className="cp-sent-orig">{s.original}</p>
                       <p className="cp-sent-new">{s.rewritten}</p>
-                      <button className="cp-sent-apply" onClick={() => applySentence(s)}>Apply →</button>
+                      <button 
+                        className="cp-sent-apply" 
+                        onClick={() => applySentence(s)}
+                      >Apply →</button>
                     </div>
                   ))}
                 </div>
               )}
               <div className="cp-ai-actions">
-                <button className="cp-btn-primary" onClick={acceptAllAi}>Accept All</button>
-                <button className="cp-btn-ghost" onClick={() => setActiveTab('post')}>Dismiss</button>
+                <button 
+                  className="cp-btn-primary" 
+                  onClick={acceptAllAi}
+                >Accept All</button>
+                <button 
+                  className="cp-btn-ghost" 
+                  onClick={() => setActiveTab('post')}
+                >Dismiss</button>
               </div>
             </div>
           )}
 
-          <div className="cp-actions">
-            <button className="cp-btn-primary" onClick={handleSave} id="btn-post">
+          <div className="cp-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+
+            <button 
+              className="cp-btn-primary" 
+              onClick={handleSave} 
+              id="btn-post"
+              style={{ background: 'linear-gradient(135deg, #C8102E, #0f1f6e)', color: 'white', border: 'none' }}
+            >
               {editingId ? 'Save Changes' : 'Post Comment'}
             </button>
-            <button className="cp-btn-ai" onClick={handleAiRewrite} disabled={!editorHtml || stripHtml(editorHtml).length < 5} id="btn-ai-rewrite">
-              ✨ Rewrite with AI
+            <button 
+              className="cp-btn-ghost" 
+              onClick={resetPost}
+              style={{ background: 'linear-gradient(135deg, #C8102E, #0f1f6e)', color: 'white', border: 'none' }}
+            >
+              Cancel
             </button>
-            {editingId && <button className="cp-btn-ghost" onClick={resetPost}>Cancel</button>}
+            <button 
+              className="cp-btn-ai" 
+              onClick={handleAiRewrite} 
+              disabled={!editorHtml || stripHtml(editorHtml).length < 5} 
+              id="btn-ai-rewrite"
+            >
+              ✨ Generate Comment
+            </button>
           </div>
         </div>
       )}
@@ -309,21 +347,6 @@ export default function CommentPage() {
             <h2 className="cp-ai-page-title">AI Dashboard Assistant</h2>
             <p className="cp-ai-page-sub">Ask questions about your dashboard data, get trend analysis, and surface key insights — all in context.</p>
           </div>
-          <div className="cp-ai-page-features">
-            {AI_FEATURES.map(f => (
-              <div key={f.title} className="cp-ai-page-feature">
-                <span className="cp-ai-page-feature-icon">{f.icon}</span>
-                <div>
-                  <div className="cp-ai-page-feature-title">{f.title}</div>
-                  <div className="cp-ai-page-feature-desc">{f.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="cp-ai-page-cta">
-            <div className="cp-ai-page-coming">🚀 Coming Soon</div>
-            <p className="cp-ai-page-cta-text">The AI assistant is being connected to your SAC data. It will be available in the next release.</p>
-          </div>
         </div>
       )}
 
@@ -337,7 +360,10 @@ export default function CommentPage() {
                 <h2 className="cp-drawer-title">✨ AI Summary</h2>
                 <p className="cp-drawer-sub">{level === 'page' ? 'Page' : 'Row'}-level · {visibleComments.length} comment{visibleComments.length !== 1 ? 's' : ''}</p>
               </div>
-              <button className="cp-drawer-close" onClick={() => setDrawerOpen(false)}>✕</button>
+              <button 
+                className="cp-drawer-close" 
+                onClick={() => setDrawerOpen(false)}
+              >✕</button>
             </div>
             <div className="cp-drawer-body">
               {sumLoading ? (
