@@ -158,9 +158,9 @@ export default function CommentPage() {
                 <div key={label}>
                   <div className="cp-date-divider"><span>{label}</span></div>
                   {items.map((c: Comment, i: number) => {
-                    const { relative, absolute } = formatTs(c.timestamp);
+                    const { relative, absolute } = formatTs(c.created_at?.value);
                     const accent  = AVATAR_COLORS[i % AVATAR_COLORS.length];
-                    const isNew   = new Date(c.timestamp) > lastOpened;
+                    const isNew   = new Date(c.created_at?.value) > lastOpened;
                     const parsedFilters = parseFilterString(c.filter);
                     
                     return (

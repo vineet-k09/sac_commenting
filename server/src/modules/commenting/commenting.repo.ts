@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { BigQueryClient } from "../../shared/big-query/bq-client";
-import { Comment, CommentLevel } from "./commenting.types";
+import { CommentLevel } from "./commenting.types";
 const DB_NAME = "vfgrp_sac_commenting";
 
 const getTable = () => {

@@ -34,12 +34,12 @@ export function groupByDate(comments: Comment[]): DateGroup[] {
   const yestStr  = new Date(Date.now() - 86_400_000).toDateString();
 
   [...comments]
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .sort((a, b) => new Date(b.created_at?.value).getTime() - new Date(a.created_at?.value).getTime())
     .forEach(c => {
-      const ds    = new Date(c.timestamp).toDateString();
+      const ds    = new Date(c.created_at?.value).toDateString();
       const label = ds === todayStr ? 'Today'
         : ds === yestStr ? 'Yesterday'
-        : new Date(c.timestamp).toLocaleDateString('en-GB', {
+        : new Date(c.created_at?.value).toLocaleDateString('en-GB', {
             day: '2-digit', month: 'long', year: 'numeric',
           });
       if (!map.has(label)) map.set(label, []);

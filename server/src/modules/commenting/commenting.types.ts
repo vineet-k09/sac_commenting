@@ -8,7 +8,7 @@ export interface Comment {
   content: string;   // rich-text HTML
   level: CommentLevel;
   filter: string;
-  timestamp: string; // ISO 8601
+  timestamp: {value: string}; // ISO 8601
 }
 
 export interface WordSug {

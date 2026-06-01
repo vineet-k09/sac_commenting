@@ -92,7 +92,7 @@ export function useCommentPage() {
   /* ── Computed ────────────────────────────────────────────── */
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
   const visibleComments = comments.filter(c => c.level === level);
-  const newCommentCount = comments.filter(c => new Date(c.timestamp) > lastOpened).length;
+  const newCommentCount = comments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
 
   /* ── Handlers ────────────────────────────────────────────── */
   const handleSave = async () => {
@@ -106,7 +106,7 @@ export function useCommentPage() {
       content: editorHtml,
       level,
       filter: filterStr,
-      timestamp: new Date().toISOString(),
+      created_at: {value: new Date().toISOString()},
     };
 
     try {
