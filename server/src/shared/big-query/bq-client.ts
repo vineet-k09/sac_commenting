@@ -14,7 +14,7 @@ export class BigQueryClient { // stateful
   constructor(
     private readonly projectId?: string,
     private readonly keyFilename?: string,
-    private readonly location: string = 'europe-west3',
+    private readonly location?: string,
   ) {
 
     //  Build options object dynamically to avoid TS errors
