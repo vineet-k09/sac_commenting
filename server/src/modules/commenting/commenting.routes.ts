@@ -5,6 +5,6 @@ const router = Router();
 
 router.post('/comment', gcpAuthMiddleware, createComment);
 router.get('/comment', getComments);
-router.put('/comment/:id',gcpAuthMiddleware, putComment);
+router.put('/comment/:id', gcpAuthMiddleware, putComment);
 router.delete('/comment/:id', deleteComment);
 export default router;
