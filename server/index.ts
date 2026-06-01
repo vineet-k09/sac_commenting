@@ -42,7 +42,7 @@ app.use(compression());
 
 // Body parsers
 app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true })); // %20 
+app.use(express.urlencoded({ extended: true }));
 
 const apiRouter = express.Router();
 apiRouter.use('/', commentingRoutes); // /api/comment/add , /api/comment/getAll, etc.
