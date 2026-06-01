@@ -26,6 +26,7 @@ export async function saveComment(
   comment: Comment,
   isEdit: boolean,
 ): Promise<void> {
+// PUT method 
   const method = isEdit ? 'PUT' : 'POST';
   const url    = isEdit ? `${API_BASE}/${comment.id}` : API_BASE;
 
