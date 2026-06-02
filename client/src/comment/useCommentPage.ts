@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
-import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../../types';
+import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../types';
 import {
-  uid, stripHtml, buildSummary,
+  uid, stripHtml, buildSummary, formatDisplayName,
   generateAi, buildAiPreviewHtml,
-} from '../api/commentUtils';
-import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr } from '../api/commentApi';
-
+} from './commentUtils';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr } from './commentApi';
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
@@ -20,7 +19,6 @@ export function useCommentPage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-
   const [lastOpened] = useState<Date>(() => {
     const stored = localStorage.getItem('sac-last-opened');
     localStorage.setItem('sac-last-opened', new Date().toISOString());
@@ -29,19 +27,16 @@ export function useCommentPage() {
 
   /* ── Toast state ─────────────────────────────────────────── */
   const [toasts, setToasts] = useState<ToastItem[]>([]);
-
   const addToast = (type: ToastItem['type'], msg: string) => {
     const id = uid();
     setToasts(p => [...p, { id, type, msg }]);
   };
   const removeToast = (id: string) => setToasts(p => p.filter(t => t.id !== id));
 
-  /* ── Summary drawer state ────────────────────────────────── */
+  /* ── Summary / AI state ──────────────────────────────────── */
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [summaryText, setSummaryText] = useState('');
   const [sumLoading, setSumLoading] = useState(false);
-
-  /* ── AI rewrite state ────────────────────────────────────── */
   const [aiMode, setAiMode] = useState(false);
   const [wordSugs, setWordSugs] = useState<WordSug[]>([]);
   const [sentSugs, setSentSugs] = useState<SentSug[]>([]);
@@ -52,49 +47,40 @@ export function useCommentPage() {
     const handler = (e: MessageEvent) => {
       const data = e.data;
       if (!data || typeof data !== 'string') return;
-      
       const newFilters: Record<string, string> = {};
-      
-      // Split by entry delimiters: ; , ? / and whitespace
-      data.split(/[;,?\/\s]+/).filter(Boolean).forEach(segment => {
-        const sepIndex = segment.indexOf(':');
-        if (sepIndex !== -1) {
-          const k = segment.substring(0, sepIndex).trim();
-          const v = segment.substring(sepIndex + 1).trim();
-          
-          if (k.toLowerCase() === 'username' || k.toLowerCase() === 'userid') {
-            setUser(v);
-          } else if (k) {
-            newFilters[k] = v;
-          }
+      data.split(/[;,?\/\s]+/).filter(Boolean).forEach(seg => {
+        const i = seg.indexOf(':');
+        if (i === -1) return;
+        const k = seg.substring(0, i).trim();
+        const v = seg.substring(i + 1).trim();
+        if (k.toLowerCase() === 'username' || k.toLowerCase() === 'userid') {
+          setUser(formatDisplayName(v));
+        } else if (k) {
+          newFilters[k] = v;
         }
       });
-
-      if (Object.keys(newFilters).length > 0) {
+      if (Object.keys(newFilters).length > 0)
         setFilters(prev => ({ ...prev, ...newFilters }));
-      }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
   }, []);
 
-  /* ── Fetch ALL comments for this page context on context change ── */
+  /* ── Fetch on context change ─────────────────────────────── */
   useEffect(() => {
     const fs = buildFilterStr(filters) ?? 'DefaultContext';
     setIsLoading(true);
-    fetchComments(fs).then(data => {
-      setComments(data);
-    }).finally(() => {
-      setTimeout(() => setIsLoading(false), 600);
-    });
-  }, [filters]); // level excluded intentionally — toggle is client-side only
+    fetchComments(fs)
+      .then(setComments)
+      .finally(() => setTimeout(() => setIsLoading(false), 600));
+  }, [filters]);
 
   /* ── Computed ────────────────────────────────────────────── */
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
   const visibleComments = comments.filter(c => c.level === level);
   const newCommentCount = comments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
 
-  /* ── Handlers ────────────────────────────────────────────── */
+  /* ── Comment handlers ────────────────────────────────────── */
   const handleSave = async () => {
     if (!editorHtml.trim() || stripHtml(editorHtml).length < 2) {
       addToast('err', 'Comment cannot be empty.');
@@ -106,16 +92,13 @@ export function useCommentPage() {
       content: editorHtml,
       level,
       filter: filterStr,
-      created_at: {value: new Date().toISOString()},
+      created_at: { value: new Date().toISOString() },
     };
-
     try {
       await saveComment(payload, !!editingId);
-
       const updated = editingId
         ? comments.map(c => (c.id === editingId ? payload : c))
         : [payload, ...comments];
-
       setComments(updated);
       cacheComments(filterStr, updated);
       addToast('ok', editingId ? 'Comment updated!' : 'Comment posted!');
@@ -144,7 +127,7 @@ export function useCommentPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    if (!window.confirm('Delete this comment?')) return;
     try {
       await deleteComment(id);
       const updated = comments.filter(c => c.id !== id);
@@ -152,19 +135,16 @@ export function useCommentPage() {
       cacheComments(filterStr, updated);
       addToast('ok', 'Comment deleted.');
       if (editingId === id) resetPost();
-    } catch (err) {
+    } catch {
       addToast('err', 'Failed to delete comment.');
     }
   };
 
-  /* ── Summary drawer ──────────────────────────────────────── */
+  /* ── Summary ─────────────────────────────────────────────── */
   const openSummary = () => {
     setSumLoading(true);
     setDrawerOpen(true);
-    setTimeout(() => {
-      setSummaryText(buildSummary(comments, level));
-      setSumLoading(false);
-    }, 1200);
+    setTimeout(() => { setSummaryText(buildSummary(comments, level)); setSumLoading(false); }, 1200);
   };
 
   /* ── AI rewrite ──────────────────────────────────────────── */
@@ -185,10 +165,7 @@ export function useCommentPage() {
   const acceptAllAi = () => {
     const tokens = stripHtml(editorHtml).split(/\s+/);
     const sugMap = new Map(wordSugs.map(w => [w.wordIdx, w]));
-    const result = tokens.map((tok, i) => {
-      const s = sugMap.get(i);
-      return s ? (s.chosen ?? s.alts[0]) : tok;
-    }).join(' ');
+    const result = tokens.map((tok, i) => { const s = sugMap.get(i); return s ? (s.chosen ?? s.alts[0]) : tok; }).join(' ');
     setEditorHtml(`<p>${result}</p>`);
     setEditorKey(k => k + 1);
     setAiMode(false);
@@ -201,38 +178,13 @@ export function useCommentPage() {
   };
 
   return {
-    /* state */
-    activeTab, setActiveTab,
-    level, setLevel,
-    comments,
-    user,
-    editorHtml, setEditorHtml,
-    editorKey,
-    editingId,
-    filters,
-    isLoading,
-    lastOpened,
-    toasts, removeToast,
-    drawerOpen, setDrawerOpen,
-    summaryText,
-    sumLoading,
-    aiMode,
-    wordSugs,
-    sentSugs,
-    aiHtml,
-    /* computed */
-    visibleComments,
-    newCommentCount,
-    /* handlers */
-    handleSave,
-    handleEdit,
-    handleDelete,
-    resetPost,
-    openSummary,
-    handleAiRewrite,
-    applyWordChoice,
-    acceptAllAi,
-    applySentence,
-    addToast,
+    activeTab, setActiveTab, level, setLevel, comments, user,
+    editorHtml, setEditorHtml, editorKey, editingId,
+    filters, isLoading, lastOpened, toasts, removeToast,
+    drawerOpen, setDrawerOpen, summaryText, sumLoading,
+    aiMode, wordSugs, sentSugs, aiHtml,
+    visibleComments, newCommentCount,
+    handleSave, handleEdit, handleDelete, resetPost,
+    openSummary, handleAiRewrite, applyWordChoice, acceptAllAi, applySentence, addToast,
   };
 }
