@@ -5,10 +5,7 @@ export const uid = (): string => crypto.randomUUID();
 export const stripHtml = (h: string): string =>
   h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-/** Convert email or dotted name → Proper Display Name.
- *  "mathew.andres@sth.com" → "Mathew Andres"
- *  "john_doe"              → "John Doe"
- */
+
 export function formatDisplayName(raw: string): string {
   if (!raw) return raw;
   const local = raw.includes('@') ? raw.split('@')[0] : raw;
