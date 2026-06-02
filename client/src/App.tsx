@@ -1,6 +1,5 @@
-import CommentPage from './components/comment/CommentPage';
+import CommentPage from './comment/CommentPage';
 import './index.css';
-import './App.css';
 
 function App() {
   return <CommentPage />;
