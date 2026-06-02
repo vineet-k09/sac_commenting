@@ -1,4 +1,4 @@
-import type { Comment, CommentLevel, WordSug, SentSug, DateGroup } from '../types';
+import type { Comment, WordSug, DateGroup } from '../types';
 
 export const uid = (): string => crypto.randomUUID();
 
@@ -21,18 +21,18 @@ export function formatDisplayName(raw: string): string {
 }
 
 export function formatTs(iso: string): { relative: string; absolute: string } {
-  const d    = new Date(iso);
+  const d = new Date(iso);
   const diff = Date.now() - d.getTime();
-  const mins  = Math.floor(diff / 60_000);
+  const mins = Math.floor(diff / 60_000);
   const hours = Math.floor(diff / 3_600_000);
-  const days  = Math.floor(diff / 86_400_000);
+  const days = Math.floor(diff / 86_400_000);
 
   const relative =
-    mins  < 1  ? 'just now'
-    : mins  < 60 ? `${mins}m ago`
-    : hours < 24 ? `${hours}h ago`
-    : days === 1 ? 'yesterday'
-    :              `${days}d ago`;
+    mins < 1 ? 'just now'
+      : mins < 60 ? `${mins}m ago`
+        : hours < 24 ? `${hours}h ago`
+          : days === 1 ? 'yesterday'
+            : `${days}d ago`;
 
   const absolute = d.toLocaleString('en-GB', {
     day: '2-digit', month: 'short', year: 'numeric',
@@ -42,9 +42,9 @@ export function formatTs(iso: string): { relative: string; absolute: string } {
 }
 
 export function groupByDate(comments: Comment[]): DateGroup[] {
-  const map      = new Map<string, Comment[]>();
+  const map = new Map<string, Comment[]>();
   const todayStr = new Date().toDateString();
-  const yestStr  = new Date(Date.now() - 86_400_000).toDateString();
+  const yestStr = new Date(Date.now() - 86_400_000).toDateString();
 
   [...comments]
     .sort((a, b) => new Date(b.created_at?.value).getTime() - new Date(a.created_at?.value).getTime())
@@ -52,8 +52,8 @@ export function groupByDate(comments: Comment[]): DateGroup[] {
       const ds = new Date(c.created_at?.value).toDateString();
       const label =
         ds === todayStr ? 'Today'
-        : ds === yestStr ? 'Yesterday'
-        : new Date(c.created_at?.value).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+          : ds === yestStr ? 'Yesterday'
+            : new Date(c.created_at?.value).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
       if (!map.has(label)) map.set(label, []);
       map.get(label)!.push(c);
     });
