@@ -1,55 +1,44 @@
-import { Storage } from '@google-cloud/storage';
 import { VertexAI } from '@google-cloud/vertexai';
-import path from 'path';
-import fs from 'fs';
 
-const PROJECT_ID = process.env.PROJECT_ID || "vf-grp-aib-dev-hk07-sbx-alpha";
-const LOCATION = "us-central1";
-const BUCKET_NAME = "gcf-v2-sources-83794410236-europe-west1";
-const PATH_PREFIX = "writeback/dashboard_image";
-const MOUNT_PATH = "/gcs-bucket-vol";
+const PROJECT_ID = process.env.PROJECT_ID || "vf-grp-aib-prd-mc2-in-lab";
+const REGION = process.env.REGION || "europe-west1";
+const MODEL_NAME = process.env.MODEL_NAME || "gemini-2.5-flash-lite";
 
-const storage = new Storage();
-const vertexAI = new VertexAI({ project: PROJECT_ID, location: LOCATION });
+const vertexAI = new VertexAI({ project: PROJECT_ID, location: REGION });
+const generativeModel = vertexAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: { maxOutputTokens: 512, temperature: 0.2 }
+});
 
-export async function handleGetUploadUrl(fileName: string) {
-    const fullBlobPath = `${PATH_PREFIX}/${fileName}`;
-    const bucket = storage.bucket(BUCKET_NAME);
-    const file = bucket.file(fullBlobPath);
-
-    const [url] = await file.getSignedUrl({
-        version: 'v4',
-        action: 'write',
-        expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-        contentType: 'image/png',
-    });
-
-    return { url, fullPath: fullBlobPath };
+async function runGemini(prompt: string): Promise<string> {
+    const result = await generativeModel.generateContent(prompt);
+    const response = result.response;
+    const text = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    return text.trim();
 }
 
-export async function handleGenerateComment(fullPathStr: string) {
-    const localImagePath = path.join(MOUNT_PATH, fullPathStr);
-    
-    // Read the image from the FUSE mount into a base64 string for Gemini
-    const imageBuffer = fs.readFileSync(localImagePath);
-    const base64Image = imageBuffer.toString('base64');
+export async function handleRephrase(userComment: string): Promise<string> {
+    const prompt = `
+    You are a professional editor.
+    Rephrase the following user comment into ONE polished version.
+    Correct grammar and spelling, and make it professional.
+    Do not change the meaning. Do not provide multiple options.
 
-    const generativeModel = vertexAI.getGenerativeModel({
-        model: 'gemini-1.5-flash-002',
-    });
+    User Comment:
+    ${userComment}
+    `;
+    return runGemini(prompt);
+}
 
-    const prompt = "Analyze this dashboard image. Summarize key trends and point out any anomalies in the charts or tables.";
-    
-    const result = await generativeModel.generateContent({
-        contents: [{
-            role: 'user',
-            parts: [
-                { inlineData: { data: base64Image, mimeType: 'image/png' } },
-                { text: prompt }
-            ]
-        }]
-    });
+export async function handleSummarize(userComment: string): Promise<string> {
+    const prompt = `
+    You are a professional editor.
+    Summarize the following user comment into ONE concise, polished statement.
+    Correct grammar and spelling, and make it professional.
+    Do not change the meaning. Do not provide multiple options.
 
-    const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    return { comment: text };
+    User Comment:
+    ${userComment}
+    `;
+    return runGemini(prompt);
 }

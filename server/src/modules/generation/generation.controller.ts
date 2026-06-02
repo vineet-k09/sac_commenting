@@ -1,30 +1,30 @@
 import { Request, Response } from "express";
-import { handleGetUploadUrl, handleGenerateComment } from "./generation.service";
+import { handleRephrase, handleSummarize } from "./generation.service";
 
-export async function getUploadUrl(req: Request, res: Response) {
+export async function rephraseComment(req: Request, res: Response) {
     try {
-        const { fileName } = req.body;
-        if (!fileName) {
-            return res.status(400).json({ error: "fileName is required" });
+        const { user_comment } = req.body;
+        if (!user_comment) {
+            return res.status(400).json({ error: "user_comment is required" });
         }
-        const result = await handleGetUploadUrl(fileName);
-        res.status(200).json(result);
+        const result = await handleRephrase(user_comment);
+        res.status(200).json({ comment: result });
     } catch (error: any) {
-        console.error("Error generating upload URL:", error);
-        res.status(500).json({ error: "Failed to generate upload URL" });
+        console.error("Error rephrasing comment:", error);
+        res.status(500).json({ error: "Failed to rephrase comment" });
     }
 }
 
-export async function generateComment(req: Request, res: Response) {
+export async function summarizeComment(req: Request, res: Response) {
     try {
-        const { fullPath } = req.body;
-        if (!fullPath) {
-            return res.status(400).json({ error: "fullPath is required" });
+        const { user_comment } = req.body;
+        if (!user_comment) {
+            return res.status(400).json({ error: "user_comment is required" });
         }
-        const result = await handleGenerateComment(fullPath);
-        res.status(200).json(result);
+        const result = await handleSummarize(user_comment);
+        res.status(200).json({ comment: result });
     } catch (error: any) {
-        console.error("Error generating comment:", error);
-        res.status(500).json({ error: "Failed to generate comment" });
+        console.error("Error summarizing comment:", error);
+        res.status(500).json({ error: "Failed to summarize comment" });
     }
 }

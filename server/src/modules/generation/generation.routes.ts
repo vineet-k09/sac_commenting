@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { getUploadUrl, generateComment } from "./generation.controller";
+import { rephraseComment, summarizeComment } from "./generation.controller";
 const router = Router();
 
-router.post('/get-upload-url', getUploadUrl);
-router.post('/generate-comment', generateComment);
+router.post('/rephrase', rephraseComment);
+router.post('/summarize', summarizeComment);
 
 export default router;

@@ -2,7 +2,8 @@
 *dist/
 server/.env
 client/.env
-
+generator/.env
+*__pycache__
 
 
 # Logs
