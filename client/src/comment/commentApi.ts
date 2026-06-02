@@ -42,6 +42,28 @@ export async function deleteComment(id: string): Promise<void> {
   }
 }
 
+export async function summarizeCommentsAPI(comments: Comment[], level: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/summarize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ comments, level }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return data.summary || data.text || data.result || 'Summary generated successfully.';
+}
+
+export async function rephraseCommentAPI(html: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/rephrase`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: html }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return data;
+}
+
 export function cacheComments(filterStr: string, comments: Comment[]): void {
   localStorage.setItem(CACHE_KEY(filterStr), JSON.stringify(comments));
 }

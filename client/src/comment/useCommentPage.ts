@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
 import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../types';
 import {
-  uid, stripHtml, buildSummary, formatDisplayName,
-  generateAi, buildAiPreviewHtml,
+  uid, stripHtml, formatDisplayName,
+  buildAiPreviewHtml,
 } from './commentUtils';
-import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr } from './commentApi';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, summarizeCommentsAPI, rephraseCommentAPI } from './commentApi';
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
@@ -41,6 +41,7 @@ export function useCommentPage() {
   const [wordSugs, setWordSugs] = useState<WordSug[]>([]);
   const [sentSugs, setSentSugs] = useState<SentSug[]>([]);
   const [aiHtml, setAiHtml] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   /* ── SAC postMessage listener ────────────────────────────── */
   useEffect(() => {
@@ -141,19 +142,36 @@ export function useCommentPage() {
   };
 
   /* ── Summary ─────────────────────────────────────────────── */
-  const openSummary = () => {
+  const openSummary = async () => {
     setSumLoading(true);
     setDrawerOpen(true);
-    setTimeout(() => { setSummaryText(buildSummary(comments, level)); setSumLoading(false); }, 1200);
+    try {
+      const summary = await summarizeCommentsAPI(comments, level);
+      setSummaryText(summary);
+    } catch (err) {
+      addToast('err', 'Failed to generate summary.');
+      setSummaryText('Failed to generate summary. Please try again.');
+    } finally {
+      setSumLoading(false);
+    }
   };
 
   /* ── AI rewrite ──────────────────────────────────────────── */
-  const handleAiRewrite = () => {
-    const { wordSugs: ws, sentSugs: ss } = generateAi(editorHtml);
-    setWordSugs(ws);
-    setSentSugs(ss);
-    setAiHtml(buildAiPreviewHtml(editorHtml, ws));
-    setAiMode(true);
+  const handleAiRewrite = async () => {
+    setAiLoading(true);
+    try {
+      const data = await rephraseCommentAPI(editorHtml);
+      const ws = data.wordSugs || [];
+      const ss = data.sentSugs || [];
+      setWordSugs(ws);
+      setSentSugs(ss);
+      setAiHtml(buildAiPreviewHtml(editorHtml, ws));
+      setAiMode(true);
+    } catch (err) {
+      addToast('err', 'Failed to generate AI rewrite.');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const applyWordChoice = (idx: number, chosen: string) => {
@@ -182,7 +200,7 @@ export function useCommentPage() {
     editorHtml, setEditorHtml, editorKey, editingId,
     filters, isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
-    aiMode, wordSugs, sentSugs, aiHtml,
+    aiMode, wordSugs, sentSugs, aiHtml, aiLoading,
     visibleComments, newCommentCount,
     handleSave, handleEdit, handleDelete, resetPost,
     openSummary, handleAiRewrite, applyWordChoice, acceptAllAi, applySentence, addToast,
