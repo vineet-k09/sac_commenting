@@ -1,12 +1,12 @@
 import type { Comment } from '../types';
 
-const API_BASE = '/api/comment';
+const API_BASE = '/api';
 const CACHE_KEY = (filter: string) => `c_${filter}`;
 
 export async function fetchComments(filterStr: string): Promise<Comment[]> {
   const params = new URLSearchParams({ filter: filterStr });
   try {
-    const res = await fetch(`${API_BASE}?${params}`);
+    const res = await fetch(`${API_BASE}/comment?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: Comment[] = await res.json();
     if (data?.length) localStorage.setItem(CACHE_KEY(filterStr), JSON.stringify(data));
@@ -19,7 +19,7 @@ export async function fetchComments(filterStr: string): Promise<Comment[]> {
 
 export async function saveComment(comment: Comment, isEdit: boolean): Promise<void> {
   const method = isEdit ? 'PUT' : 'POST';
-  const url    = isEdit ? `${API_BASE}/${comment.id}` : API_BASE;
+  const url    = isEdit ? `${API_BASE}/comment/${comment.id}` : `${API_BASE}/comment`;
   const res = await fetch(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
@@ -32,7 +32,7 @@ export async function saveComment(comment: Comment, isEdit: boolean): Promise<vo
 }
 
 export async function deleteComment(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/${id}`, {
+  const res = await fetch(`${API_BASE}/comment/${id}`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
   });
@@ -57,11 +57,10 @@ export async function rephraseCommentAPI(html: string): Promise<any> {
   const res = await fetch(`${API_BASE}/rephrase`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ content: html }),
+    body: JSON.stringify({ user_comment: html }),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  return data;
+  return await res.json();
 }
 
 export function cacheComments(filterStr: string, comments: Comment[]): void {

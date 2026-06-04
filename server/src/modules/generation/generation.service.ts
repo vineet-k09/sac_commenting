@@ -30,15 +30,16 @@ export async function handleRephrase(userComment: string): Promise<string> {
     return runGemini(prompt);
 }
 
-export async function handleSummarize(userComment: string): Promise<string> {
+export async function handleSummarize(comments: any[], level: string): Promise<string> {
+    const commentsText = JSON.stringify(comments, null, 2);
     const prompt = `
     You are a professional editor.
-    Summarize the following user comment into ONE concise, polished statement.
+    Summarize the following list of comments for the "${level}" level into ONE concise, polished paragraph.
     Correct grammar and spelling, and make it professional.
-    Do not change the meaning. Do not provide multiple options.
+    Do not change the collective meaning. Do not provide multiple options.
 
-    User Comment:
-    ${userComment}
+    Comments Data:
+    ${commentsText}
     `;
     return runGemini(prompt);
 }

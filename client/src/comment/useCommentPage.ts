@@ -161,11 +161,15 @@ export function useCommentPage() {
     setAiLoading(true);
     try {
       const data = await rephraseCommentAPI(editorHtml);
-      const ws = data.wordSugs || [];
-      const ss = data.sentSugs || [];
-      setWordSugs(ws);
-      setSentSugs(ss);
-      setAiHtml(buildAiPreviewHtml(editorHtml, ws));
+      if (typeof data.comment === 'string') {
+        // Handle full string rewrite from the current backend
+        setAiHtml(data.comment);
+        setWordSugs([]);
+      } else {
+        const ws = data.comment || [];
+        setWordSugs(ws);
+        setAiHtml(buildAiPreviewHtml(editorHtml, ws));
+      }
       setAiMode(true);
     } catch (err) {
       addToast('err', 'Failed to generate AI rewrite.');
@@ -181,9 +185,14 @@ export function useCommentPage() {
   };
 
   const acceptAllAi = () => {
-    const tokens = stripHtml(editorHtml).split(/\s+/);
-    const sugMap = new Map(wordSugs.map(w => [w.wordIdx, w]));
-    const result = tokens.map((tok, i) => { const s = sugMap.get(i); return s ? (s.chosen ?? s.alts[0]) : tok; }).join(' ');
+    let result = '';
+    if (wordSugs.length === 0 && aiHtml) {
+      result = aiHtml;
+    } else {
+      const tokens = stripHtml(editorHtml).split(/\s+/);
+      const sugMap = new Map(wordSugs.map(w => [w.wordIdx, w]));
+      result = tokens.map((tok, i) => { const s = sugMap.get(i); return s ? (s.chosen ?? s.alts[0]) : tok; }).join(' ');
+    }
     setEditorHtml(`<p>${result}</p>`);
     setEditorKey(k => k + 1);
     setAiMode(false);
