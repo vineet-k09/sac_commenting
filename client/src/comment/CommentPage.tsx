@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import RichTextEditor from '../ui/RichTextEditor';
 import ToastContainer from '../ui/ToastContainer';
 import SkeletonCard from '../ui/SkeletonCard';
@@ -20,38 +20,33 @@ const IcoEdit   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="no
 const IcoTrash  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>;
 const IcoSend   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
 const IcoUser   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-const IcoFilter = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
-const IcoChevron = ({ open }: { open: boolean }) => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-    style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
-    <polyline points="6 9 12 15 18 9"/>
-  </svg>
-);
+const IcoFilter = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
 
-/* ─── Filter parsing ─────────────────────────────────────── */
-function parseFilterString(filterStr: string) {
+/* ─── Parse stored filter string back to key-value pairs ───────── */
+// buildFilterStr stores as "Dashboard:X;Entity:Y;Month:Z" (sorted, semicolon-delimited)
+function parseCommentFilter(filterStr: string): { key: string; val: string }[] {
   if (!filterStr || filterStr === 'DefaultContext') return [];
-  return filterStr.split(/[;,?\/\s]+/).filter(Boolean).map(seg => {
+  return filterStr.split(';').filter(Boolean).map(seg => {
     const i = seg.indexOf(':');
     if (i === -1) return { key: 'Context', val: seg.trim() };
-    return { key: seg.substring(0, i).trim() || 'Context', val: seg.substring(i + 1).trim() };
+    return { key: seg.substring(0, i).trim(), val: seg.substring(i + 1).trim() };
   });
 }
+
+
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function CommentPage() {
   const {
     activeTab, setActiveTab, level, setLevel, user,
     editorHtml, setEditorHtml, editorKey, editingId,
-    filters, isLoading, lastOpened, toasts, removeToast,
+    isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, wordSugs, sentSugs, aiHtml, visibleComments, newCommentCount,
     handleSave, handleEdit, resetPost, handleDelete, openSummary,
     handleAiRewrite, applyWordChoice, acceptAllAi, applySentence,
   } = useCommentPage();
 
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const filterCount = Object.keys(filters).length;
 
   return (
     <div className="cp-root">
@@ -86,31 +81,9 @@ export default function CommentPage() {
               <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')} id="level-page"><IcoPage /> Page</button>
               <button className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} onClick={() => setLevel('row')}  id="level-row"><IcoRow /> Row</button>
             </div>
-            <button className="cp-test-btn" onClick={() => window.postMessage('Region:APAC;Country:India;Product:Analytics;Quarter:Q1-2025;Segment:Enterprise', '*')}>
-              🛠 Test Filter
-            </button>
             <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise"><IcoAI /> Summarise</button>
           </div>
 
-          {/* Collapsible filter bar */}
-          {filterCount > 0 && (
-            <div className="cp-filter-bar">
-              <div className="cp-filter-bar-summary"><IcoFilter /><span className="cp-filter-bar-label">{filterCount} filter{filterCount !== 1 ? 's' : ''} active</span></div>
-              <button className="cp-filter-toggle-btn" onClick={() => setFiltersExpanded(v => !v)} aria-expanded={filtersExpanded}>
-                {filtersExpanded ? 'Hide' : 'Show'} <IcoChevron open={filtersExpanded} />
-              </button>
-            </div>
-          )}
-          {filtersExpanded && filterCount > 0 && (
-            <div className="cp-filter-chip-list">
-              {Object.entries(filters).map(([k, v]) => (
-                <span key={k} className="cp-breadcrumb-chip">
-                  <span className="cp-breadcrumb-key">{k}:</span>
-                  <span className="cp-breadcrumb-val">{v}</span>
-                </span>
-              ))}
-            </div>
-          )}
 
           {/* Comment list */}
           <div className="cp-comments-list">
@@ -130,7 +103,6 @@ export default function CommentPage() {
                     const { relative, absolute } = formatTs(c.created_at?.value);
                     const accent = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const isNew  = new Date(c.created_at?.value) > lastOpened;
-                    const rowFilters = c.level === 'row' ? parseFilterString(c.filter) : [];
                     return (
                       <div key={c.id}
                         className={`cp-card${isNew ? ' cp-card--new' : ''}${c.level === 'row' ? ' cp-card--row' : ''}`}
@@ -147,24 +119,26 @@ export default function CommentPage() {
                               <span className="cp-ts" title={absolute}>{relative} · {absolute}</span>
                             </div>
                             <div className="cp-card-actions">
+                              <div className="cp-filter-tip-wrap">
+                                <button className="cp-icon-btn" title="View context filters">
+                                  <IcoFilter />
+                                </button>
+                                {parseCommentFilter(c.filter).length > 0 && (
+                                  <div className="cp-filter-tip">
+                                    <div className="cp-filter-tip-title">Context Filters</div>
+                                    {parseCommentFilter(c.filter).map(f => (
+                                      <div key={f.key} className="cp-filter-tip-row">
+                                        <span className="cp-filter-tip-key">{f.key}</span>
+                                        <span className="cp-filter-tip-val">{f.val}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                               <button className="cp-icon-btn" onClick={() => handleEdit(c)} title="Edit comment"><IcoEdit /></button>
                               <button className="cp-icon-btn cp-icon-btn--delete" onClick={() => handleDelete(c.id)} title="Delete comment"><IcoTrash /></button>
                             </div>
                           </div>
-
-                          {/* Row-level: compact inline filter context */}
-                          {c.level === 'row' && rowFilters.length > 0 && (
-                            <div className="cp-row-ctx">
-                              <IcoRow />
-                              <div className="cp-row-filter-chips">
-                                {rowFilters.map((f, idx) => (
-                                  <span key={idx} className="cp-row-filter-chip">
-                                    <span className="cp-row-filter-key">{f.key}</span>{f.val}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
 
                           <div className="cp-content" dangerouslySetInnerHTML={{ __html: c.content }} />
                         </div>
@@ -277,7 +251,7 @@ export default function CommentPage() {
                 <div className="cp-loading"><div className="cp-spinner" /><p>Analysing comments…</p></div>
               ) : (
                 <>
-                  <div className="cp-summary-text">{summaryText}</div>
+                  <div className="cp-summary-text" dangerouslySetInnerHTML={{ __html: summaryText }} />
                   <div className="cp-summary-meta">
                     <strong>Contributors:</strong>{' '}
                     {[...new Set(visibleComments.map(c => formatDisplayName(c.user)))].join(', ')}

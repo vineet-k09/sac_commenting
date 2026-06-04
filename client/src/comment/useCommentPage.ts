@@ -44,19 +44,30 @@ export function useCommentPage() {
   const [aiLoading, setAiLoading] = useState(false);
 
   /* ── SAC postMessage listener ────────────────────────────── */
+  // Real SAC message format:
+  // "Entity:X?Year:Y?Month:Z?Custom1:W|UserID:uid?UserName:uname?Story:sid?Page: PageName"
+  // Segments are delimited by `?` or `|`; user/meta fields are excluded from filter chips.
+  const META_KEYS = new Set(['userid', 'username', 'story', 'storyid']);
+
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       const data = e.data;
       if (!data || typeof data !== 'string') return;
       const newFilters: Record<string, string> = {};
-      data.split(/[;,?\/\s]+/).filter(Boolean).forEach(seg => {
+      // Split on `?` or `|` — the two delimiters used in the SAC message string
+      data.split(/[?|]+/).filter(Boolean).forEach(seg => {
         const i = seg.indexOf(':');
         if (i === -1) return;
         const k = seg.substring(0, i).trim();
         const v = seg.substring(i + 1).trim();
-        if (k.toLowerCase() === 'username' || k.toLowerCase() === 'userid') {
+        const kLower = k.toLowerCase();
+        if (kLower === 'username' || kLower === 'userid') {
           setUser(formatDisplayName(v));
-        } else if (k) {
+        } else if (kLower === 'page') {
+          // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
+          if (v) newFilters['Dashboard'] = v;
+        } else if (k && !META_KEYS.has(kLower)) {
+          // Only add genuine dimension filters (Entity, Year, Month, Custom1, etc.)
           newFilters[k] = v;
         }
       });

@@ -1288,3 +1288,71 @@
   border-radius: 20px; margin-bottom: 8px; letter-spacing: 0.5px;
 }
 .cp-ai-page-cta-text { font-size: 12px; color: var(--text-2); line-height: 1.6; margin: 0; }
+
+/* ─── Per-card filter context tooltip ───────────────────── */
+.cp-filter-tip-wrap {
+  position: relative;
+}
+.cp-filter-tip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  right: 0;
+  z-index: 300;
+  min-width: 170px;
+  max-width: 240px;
+  background: #1a2035;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+  pointer-events: none;
+}
+.cp-filter-tip-wrap:hover .cp-filter-tip {
+  display: block;
+}
+/* small arrow pointing down */
+.cp-filter-tip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  background: #1a2035;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+  transform: rotate(45deg);
+}
+.cp-filter-tip-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.cp-filter-tip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+}
+.cp-filter-tip-key {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cp-filter-tip-val {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #e2e8f0;
+  text-align: right;
+  word-break: break-word;
+}
+
