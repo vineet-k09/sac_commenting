@@ -36,7 +36,8 @@ export async function createComment(
          @content,
          @level,
          @filter,
-         @dashboard
+         @dashboard,
+         @wb_keys,
          CURRENT_TIMESTAMP()
         )`;
 
