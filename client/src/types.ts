@@ -7,7 +7,8 @@ export interface Comment {
   user: string;
   content: string;   // rich-text HTML
   level: CommentLevel;
-  filter: string;
+  filter: string;        // "Key1:Val1;Key2:Val2" — full key+value context
+  filterValues: string;  // "Val1;Val2" — values only
   dashboard: string;
   created_at: {value: string}; // ISO 8601 
 }

@@ -5,7 +5,7 @@ import {
   uid, stripHtml, formatDisplayName,
   buildAiPreviewHtml,
 } from './commentUtils';
-import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, summarizeCommentsAPI, rephraseCommentAPI } from './commentApi';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI } from './commentApi';
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
@@ -92,8 +92,9 @@ export function useCommentPage() {
       .finally(() => setTimeout(() => setIsLoading(false), 600));
   }, [filters]);
 
-  /* ── Computed ────────────────────────────────────────────── */
-  const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
+  /* ── Computed ─────────────────────────────────────────────── */
+  const filterStr       = buildFilterStr(filters)       ?? 'DefaultContext';
+  const filterValuesStr = buildFilterValuesStr(filters)  ?? 'DefaultContext';
   const visibleComments = comments.filter(c => c.level === level);
   const newCommentCount = comments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
 
@@ -109,6 +110,7 @@ export function useCommentPage() {
       content: editorHtml,
       level,
       filter: filterStr,
+      filterValues: filterValuesStr,
       dashboard: dashboard,
       created_at: { value: new Date().toISOString() },
     };
