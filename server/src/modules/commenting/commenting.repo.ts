@@ -13,7 +13,9 @@ export async function createComment(
     user: string,
     content: string, 
     level: CommentLevel, 
-    filter: string
+    filter: string,
+    dashboard: string,
+    wb_keys: string
 ){
     const id = randomUUID();
 
@@ -25,6 +27,8 @@ export async function createComment(
         content,
         level,
         filter,
+        dashboard,
+        wb_keys,
         created_at
         ) VALUES (
          @id,
@@ -32,6 +36,7 @@ export async function createComment(
          @content,
          @level,
          @filter,
+         @dashboard
          CURRENT_TIMESTAMP()
         )`;
 
@@ -40,7 +45,9 @@ export async function createComment(
         user,
         content,
         level,
-        filter
+        filter,
+        dashboard,
+        wb_keys
     };
 
     const res = await bq.query(query, queryParams);
@@ -48,6 +55,7 @@ export async function createComment(
     return res;
 }
 
+// TODO: Implement dashboard name filter
 export async function getComments(filter?: string){
     let query = `SELECT * FROM ${getTable()}`;
     if (filter) {

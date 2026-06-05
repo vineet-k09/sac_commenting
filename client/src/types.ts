@@ -8,6 +8,7 @@ export interface Comment {
   content: string;   // rich-text HTML
   level: CommentLevel;
   filter: string;
+  dashboard: string;
   created_at: {value: string}; // ISO 8601 
 }
 

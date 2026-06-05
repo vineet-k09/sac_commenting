@@ -34,10 +34,11 @@ export async function handleSummarize(comments: any[], level: string): Promise<s
     const commentsText = JSON.stringify(comments, null, 2);
     const prompt = `
     You are a professional editor.
-    Summarize the following list of comments for the "${level}" level into ONE concise, polished paragraph.
+    Summarize the following list of comments into one concise, set of bullet points.
     Correct grammar and spelling, and make it professional.
+    Generate the response in HTML (SKIP HTML, BODY, HEAD tag), use HTML list, headings and <b></b> tags for bold for key insights.
     Do not change the collective meaning. Do not provide multiple options.
-
+ 
     Comments Data:
     ${commentsText}
     `;

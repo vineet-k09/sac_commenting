@@ -42,6 +42,8 @@ export function useCommentPage() {
   const [sentSugs, setSentSugs] = useState<SentSug[]>([]);
   const [aiHtml, setAiHtml] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [dashboard, setDashboard] = useState('');
+
 
   /* ── SAC postMessage listener ────────────────────────────── */
   // Real SAC message format:
@@ -65,7 +67,10 @@ export function useCommentPage() {
           setUser(formatDisplayName(v));
         } else if (kLower === 'page') {
           // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
-          if (v) newFilters['Dashboard'] = v;
+          if (v) {
+            newFilters['Dashboard'] = v;
+            setDashboard(v);
+          }
         } else if (k && !META_KEYS.has(kLower)) {
           // Only add genuine dimension filters (Entity, Year, Month, Custom1, etc.)
           newFilters[k] = v;
@@ -104,6 +109,7 @@ export function useCommentPage() {
       content: editorHtml,
       level,
       filter: filterStr,
+      dashboard: dashboard,
       created_at: { value: new Date().toISOString() },
     };
     try {

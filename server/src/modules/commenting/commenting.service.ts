@@ -2,8 +2,8 @@ import { getComments, createComment, deleteComment, putComment } from "./comment
 import { Comment } from "./commenting.types";
 
 export async function handleCreateComment(data: Comment, username?: string){
-    const { user, content, level, filter } = data;
-    const res = await createComment(username || user, content, level, filter);
+    const { user, content, level, filter, dashboard, wb_keys } = data;
+    const res = await createComment(username || user, content, level, filter, dashboard, wb_keys);
     return res;
 }
 
