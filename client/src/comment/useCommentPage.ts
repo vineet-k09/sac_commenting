@@ -42,7 +42,7 @@ export function useCommentPage() {
   const [sentSugs, setSentSugs] = useState<SentSug[]>([]);
   const [aiHtml, setAiHtml] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [dashboard, setDashboard] = useState('');
+  const [dashboard, setDashboard] = useState('common');
 
 
   /* ── SAC postMessage listener ────────────────────────────── */
@@ -110,7 +110,7 @@ export function useCommentPage() {
       content: editorHtml,
       level,
       filter: filterStr,
-      filterValues: filterValuesStr,
+      wb_keys: filterValuesStr,
       dashboard: dashboard,
       created_at: { value: new Date().toISOString() },
     };
