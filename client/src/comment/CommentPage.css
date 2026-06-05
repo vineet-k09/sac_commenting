@@ -1019,7 +1019,7 @@
   background: var(--grad-soft);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 14px 16px 14px 24px;
   margin-bottom: 12px;
 }
 .cp-summary-meta {
