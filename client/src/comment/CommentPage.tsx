@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import RichTextEditor from '../ui/RichTextEditor';
 import ToastContainer from '../ui/ToastContainer';
 import SkeletonCard from '../ui/SkeletonCard';
@@ -21,6 +21,14 @@ const IcoTrash  = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="no
 const IcoSend   = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
 const IcoUser   = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const IcoFilter = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>;
+const IcoEye    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
+const IcoEyeOff = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>;
+const IcoChevron = ({ open }: { open: boolean }) => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+);
 
 /* ─── Parse stored filter string back to key-value pairs ───────── */
 // buildFilterStr stores as "Dashboard:X;Entity:Y;Month:Z" (sorted, semicolon-delimited)
@@ -40,13 +48,27 @@ export default function CommentPage() {
   const {
     activeTab, setActiveTab, level, setLevel, user,
     editorHtml, setEditorHtml, editorKey, editingId,
-    isLoading, lastOpened, toasts, removeToast,
+    filters, isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, wordSugs, sentSugs, aiHtml, visibleComments, newCommentCount,
     handleSave, handleEdit, resetPost, handleDelete, openSummary,
     handleAiRewrite, applyWordChoice, acceptAllAi, applySentence,
+    handleTestFilter, handleClearRowFilters,
   } = useCommentPage();
 
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [hiddenRowFilters, setHiddenRowFilters] = useState<Set<string>>(new Set());
+
+  const toggleRowFilter = (id: string) => {
+    setHiddenRowFilters(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const filterCount = Object.keys(filters || {}).length;
 
   return (
     <div className="cp-root">
@@ -81,9 +103,34 @@ export default function CommentPage() {
               <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')} id="level-page"><IcoPage /> Page</button>
               <button className={`cp-level-btn${level === 'row'  ? ' active' : ''}`} onClick={() => setLevel('row')}  id="level-row"><IcoRow /> Row</button>
             </div>
-            <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise"><IcoAI /> Summarise</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button className="cp-test-btn" onClick={handleTestFilter} title="Send demo SAC filter string">Test SAC</button>
+              <button className="cp-test-btn" onClick={handleClearRowFilters} title="Clear row filters but keep dashboard">Clear Rows</button>
+              <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise"><IcoAI /> Summarise</button>
+            </div>
           </div>
 
+          {/* Collapsible filter bar */}
+          {level === 'page' && filterCount > 0 && (
+            <>
+              <div className="cp-filter-bar">
+                <div className="cp-filter-bar-summary"><IcoFilter /><span className="cp-filter-bar-label">{filterCount} filter{filterCount !== 1 ? 's' : ''} active</span></div>
+                <button className="cp-filter-toggle-btn" onClick={() => setFiltersExpanded(v => !v)} aria-expanded={filtersExpanded}>
+                  {filtersExpanded ? 'Hide' : 'Show'} <IcoChevron open={filtersExpanded} />
+                </button>
+              </div>
+              {filtersExpanded && (
+                <div className="cp-filter-chip-list">
+                  {Object.entries(filters).map(([k, v]) => (
+                    <span key={k} className="cp-breadcrumb-chip">
+                      <span className="cp-breadcrumb-key">{k}:</span>
+                      <span className="cp-breadcrumb-val">{v}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
 
           {/* Comment list */}
           <div className="cp-comments-list">
@@ -119,26 +166,29 @@ export default function CommentPage() {
                               <span className="cp-ts" title={absolute}>{relative} · {absolute}</span>
                             </div>
                             <div className="cp-card-actions">
-                              <div className="cp-filter-tip-wrap">
-                                <button className="cp-icon-btn" title="View context filters">
-                                  <IcoFilter />
+                              {c.level === 'row' && (
+                                <button className="cp-icon-btn" onClick={() => toggleRowFilter(c.id)} title={hiddenRowFilters.has(c.id) ? "Show context filters" : "Hide context filters"}>
+                                  {hiddenRowFilters.has(c.id) ? <IcoEyeOff /> : <IcoEye />}
                                 </button>
-                                {parseCommentFilter(c.filter).length > 0 && (
-                                  <div className="cp-filter-tip">
-                                    <div className="cp-filter-tip-title">Context Filters</div>
-                                    {parseCommentFilter(c.filter).map(f => (
-                                      <div key={f.key} className="cp-filter-tip-row">
-                                        <span className="cp-filter-tip-key">{f.key}</span>
-                                        <span className="cp-filter-tip-val">{f.val}</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              )}
                               <button className="cp-icon-btn" onClick={() => handleEdit(c)} title="Edit comment"><IcoEdit /></button>
                               <button className="cp-icon-btn cp-icon-btn--delete" onClick={() => handleDelete(c.id)} title="Delete comment"><IcoTrash /></button>
                             </div>
                           </div>
+
+                          {/* Row-level: compact inline filter context */}
+                          {c.level === 'row' && !hiddenRowFilters.has(c.id) && parseCommentFilter(c.filter).length > 0 && (
+                            <div className="cp-row-ctx">
+                              <IcoRow />
+                              <div className="cp-row-filter-chips">
+                                {parseCommentFilter(c.filter).map(f => (
+                                  <span key={f.key} className="cp-row-filter-chip">
+                                    <span className="cp-row-filter-key">{f.key}</span>{f.val}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
 
                           <div className="cp-content" dangerouslySetInnerHTML={{ __html: c.content }} />
                         </div>

@@ -46,6 +46,33 @@ export function useCommentPage() {
 
 
   /* ── SAC postMessage listener ────────────────────────────── */
+  const handleTestFilter = () => {
+    const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|UserID:u123?UserName:John Doe?Story:s1?Page: LandingPage";
+    
+    const newFilters: Record<string, string> = {};
+    mockSACMessage.split(/[?|]+/).filter(Boolean).forEach(seg => {
+      const i = seg.indexOf(':');
+      if (i === -1) return;
+      const k = seg.substring(0, i).trim();
+      const v = seg.substring(i + 1).trim();
+      const kLower = k.toLowerCase();
+      if (kLower === 'username' || kLower === 'userid') {
+        setUser(formatDisplayName(v));
+      } else if (kLower === 'page') {
+        if (v) {
+          newFilters['Dashboard'] = v;
+          setDashboard(v);
+        }
+      } else if (k && !META_KEYS.has(kLower)) {
+        newFilters[k] = v;
+      }
+    });
+    
+    if (Object.keys(newFilters).length > 0) {
+      setFilters(prev => ({ ...prev, ...newFilters }));
+    }
+    addToast('info', 'Test SAC filters applied directly');
+  };
   // Real SAC message format:
   // "Entity:X?Year:Y?Month:Z?Custom1:W|UserID:uid?UserName:uname?Story:sid?Page: PageName"
   // Segments are delimited by `?` or `|`; user/meta fields are excluded from filter chips.
@@ -86,15 +113,29 @@ export function useCommentPage() {
   /* ── Fetch on context change ─────────────────────────────── */
   useEffect(() => {
     const fs = buildFilterStr(filters) ?? 'DefaultContext';
+    const isOnlyDashboard = Object.keys(filters).length === 1 && !!filters['Dashboard'];
+
     setIsLoading(true);
-    fetchComments(fs)
-      .then(setComments)
-      .finally(() => setTimeout(() => setIsLoading(false), 600));
+    
+    if (isOnlyDashboard) {
+      // If only Dashboard is active (e.g. after "Clear Rows"), fetch all comments 
+      // and filter locally to ensure we see all row-level comments for this dashboard.
+      fetchComments('')
+        .then(data => {
+          const dashboardVal = filters['Dashboard'];
+          setComments(data.filter(c => c.dashboard === dashboardVal));
+        })
+        .finally(() => setTimeout(() => setIsLoading(false), 600));
+    } else {
+      fetchComments(fs)
+        .then(setComments)
+        .finally(() => setTimeout(() => setIsLoading(false), 600));
+    }
   }, [filters]);
 
   /* ── Computed ─────────────────────────────────────────────── */
-  const filterStr       = buildFilterStr(filters)       ?? 'DefaultContext';
-  const filterValuesStr = buildFilterValuesStr(filters)  ?? 'DefaultContext';
+  const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
+  const wb_keysStr = buildFilterValuesStr(filters) ?? 'DefaultContext';
   const visibleComments = comments.filter(c => c.level === level);
   const newCommentCount = comments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
 
@@ -110,7 +151,7 @@ export function useCommentPage() {
       content: editorHtml,
       level,
       filter: filterStr,
-      wb_keys: filterValuesStr,
+      wb_keys: wb_keysStr,
       dashboard: dashboard,
       created_at: { value: new Date().toISOString() },
     };
@@ -158,6 +199,15 @@ export function useCommentPage() {
     } catch {
       addToast('err', 'Failed to delete comment.');
     }
+  };
+
+  const handleClearRowFilters = () => {
+    setFilters(prev => {
+      const next: Record<string, string> = {};
+      if (prev['Dashboard']) next['Dashboard'] = prev['Dashboard'];
+      return next;
+    });
+    addToast('info', 'Row-level filters cleared');
   };
 
   /* ── Summary ─────────────────────────────────────────────── */
@@ -232,5 +282,6 @@ export function useCommentPage() {
     visibleComments, newCommentCount,
     handleSave, handleEdit, handleDelete, resetPost,
     openSummary, handleAiRewrite, applyWordChoice, acceptAllAi, applySentence, addToast,
+    handleTestFilter, handleClearRowFilters,
   };
 }
