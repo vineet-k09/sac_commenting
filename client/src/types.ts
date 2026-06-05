@@ -13,17 +13,6 @@ export interface Comment {
   created_at: {value: string}; // ISO 8601 
 }
 
-export interface WordSug {
-  wordIdx: number;
-  original: string;
-  alts: string[];
-  chosen: string | null;
-}
-
-export interface SentSug {
-  original: string;
-  rewritten: string;
-}
 
 export interface DateGroup {
   label: string;

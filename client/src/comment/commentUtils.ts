@@ -1,4 +1,4 @@
-import type { Comment, WordSug, DateGroup } from '../types';
+import type { Comment, DateGroup } from '../types';
 
 export const uid = (): string => crypto.randomUUID();
 
@@ -60,15 +60,4 @@ export function groupByDate(comments: Comment[]): DateGroup[] {
 
 export function getInitials(name: string): string {
   return formatDisplayName(name).split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-}
-
-/* ─── AI helpers ─────────────────────────────────── */
-export function buildAiPreviewHtml(html: string, wordSugs: WordSug[]): string {
-  const tokens = stripHtml(html).split(/\s+/);
-  const sugMap = new Map(wordSugs.map(w => [w.wordIdx, w]));
-  return tokens.map((tok, i) => {
-    const s = sugMap.get(i);
-    if (!s) return tok;
-    return `<span class="ai-del">${tok}</span> <span class="ai-ins">${s.chosen ?? s.alts[0]}</span>`;
-  }).join(' ');
 }

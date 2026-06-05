@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
-import type { Comment, CommentLevel, ActiveTab, WordSug, SentSug } from '../types';
-import {
-  uid, stripHtml, formatDisplayName,
-  buildAiPreviewHtml,
-} from './commentUtils';
+import type { Comment, CommentLevel, ActiveTab } from '../types';
+import { uid, stripHtml, formatDisplayName } from './commentUtils';
 import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI } from './commentApi';
 
 export function useCommentPage() {
@@ -38,8 +35,7 @@ export function useCommentPage() {
   const [summaryText, setSummaryText] = useState('');
   const [sumLoading, setSumLoading] = useState(false);
   const [aiMode, setAiMode] = useState(false);
-  const [wordSugs, setWordSugs] = useState<WordSug[]>([]);
-  const [sentSugs, setSentSugs] = useState<SentSug[]>([]);
+
   const [aiHtml, setAiHtml] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [dashboard, setDashboard] = useState('common');
@@ -48,7 +44,7 @@ export function useCommentPage() {
   /* ── SAC postMessage listener ────────────────────────────── */
   const handleTestFilter = () => {
     const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|UserID:u123?UserName:John Doe?Story:s1?Page: LandingPage";
-    
+
     const newFilters: Record<string, string> = {};
     mockSACMessage.split(/[?|]+/).filter(Boolean).forEach(seg => {
       const i = seg.indexOf(':');
@@ -67,7 +63,7 @@ export function useCommentPage() {
         newFilters[k] = v;
       }
     });
-    
+
     if (Object.keys(newFilters).length > 0) {
       setFilters(prev => ({ ...prev, ...newFilters }));
     }
@@ -116,7 +112,7 @@ export function useCommentPage() {
     const isOnlyDashboard = Object.keys(filters).length === 1 && !!filters['Dashboard'];
 
     setIsLoading(true);
-    
+
     if (isOnlyDashboard) {
       // If only Dashboard is active (e.g. after "Clear Rows"), fetch all comments 
       // and filter locally to ensure we see all row-level comments for this dashboard.
@@ -175,8 +171,7 @@ export function useCommentPage() {
     setEditorKey(k => k + 1);
     setEditingId(null);
     setAiMode(false);
-    setWordSugs([]);
-    setSentSugs([]);
+    setAiHtml('');
   };
 
   const handleEdit = (c: Comment) => {
@@ -231,46 +226,21 @@ export function useCommentPage() {
     try {
       const data = await rephraseCommentAPI(editorHtml);
       if (typeof data.comment === 'string') {
-        // Handle full string rewrite from the current backend
         setAiHtml(data.comment);
-        setWordSugs([]);
-      } else {
-        const ws = data.comment || [];
-        setWordSugs(ws);
-        setAiHtml(buildAiPreviewHtml(editorHtml, ws));
+        setAiMode(true);
       }
-      setAiMode(true);
-    } catch (err) {
+    } catch {
       addToast('err', 'Failed to generate AI rewrite.');
     } finally {
       setAiLoading(false);
     }
   };
 
-  const applyWordChoice = (idx: number, chosen: string) => {
-    const updated = wordSugs.map((w, i) => (i === idx ? { ...w, chosen } : w));
-    setWordSugs(updated);
-    setAiHtml(buildAiPreviewHtml(editorHtml, updated));
-  };
-
   const acceptAllAi = () => {
-    let result = '';
-    if (wordSugs.length === 0 && aiHtml) {
-      result = aiHtml;
-    } else {
-      const tokens = stripHtml(editorHtml).split(/\s+/);
-      const sugMap = new Map(wordSugs.map(w => [w.wordIdx, w]));
-      result = tokens.map((tok, i) => { const s = sugMap.get(i); return s ? (s.chosen ?? s.alts[0]) : tok; }).join(' ');
-    }
-    setEditorHtml(`<p>${result}</p>`);
+    setEditorHtml(`<p>${aiHtml}</p>`);
     setEditorKey(k => k + 1);
     setAiMode(false);
-  };
-
-  const applySentence = (s: SentSug) => {
-    setEditorHtml(editorHtml.replace(s.original, s.rewritten));
-    setEditorKey(k => k + 1);
-    setAiMode(false);
+    setAiHtml('');
   };
 
   return {
@@ -278,10 +248,10 @@ export function useCommentPage() {
     editorHtml, setEditorHtml, editorKey, editingId,
     filters, isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
-    aiMode, wordSugs, sentSugs, aiHtml, aiLoading,
+    aiMode, aiHtml, aiLoading,
     visibleComments, newCommentCount,
     handleSave, handleEdit, handleDelete, resetPost,
-    openSummary, handleAiRewrite, applyWordChoice, acceptAllAi, applySentence, addToast,
+    openSummary, handleAiRewrite, acceptAllAi, addToast,
     handleTestFilter, handleClearRowFilters,
   };
 }
