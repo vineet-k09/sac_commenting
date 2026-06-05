@@ -68,12 +68,12 @@ export function cacheComments(filterStr: string, comments: Comment[]): void {
 }
 
 export function buildFilterStr(filters: Record<string, string>): string | null {
-  const keys = Object.keys(filters).sort();
+  const keys = Object.keys(filters);
   return keys.length ? keys.map(k => `${k}:${filters[k]}`).join(';') : null;
 }
 
 // Returns only the values (sorted by key order to stay consistent with buildFilterStr)
 export function buildFilterValuesStr(filters: Record<string, string>): string | null {
-  const keys = Object.keys(filters).sort();
+  const keys = Object.keys(filters);
   return keys.length ? keys.map(k => filters[k]).join(';') : null;
 }
