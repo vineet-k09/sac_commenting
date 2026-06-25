@@ -1,6 +1,8 @@
 /* ─── Domain Types ───────────────────────────────────────── */
 export type CommentLevel = 'page' | 'row';
-export type ActiveTab    = 'comments' | 'post' | 'ai';
+export type ActiveTab    = 'comments' | 'post' | 'ai' | 'admin';
+
+export type UserRole = 'Admin' | 'Editor' | 'Contributor' | 'Viewer';
 
 export interface Comment {
   id: string; // from backend
@@ -11,6 +13,7 @@ export interface Comment {
   wb_keys: string;  // "Val1;Val2" — values only
   dashboard: string;
   created_at: {value: string}; // ISO 8601 
+  is_private?: boolean;
 }
 
 

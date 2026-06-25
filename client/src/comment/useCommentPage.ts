@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
-import type { Comment, CommentLevel, ActiveTab } from '../types';
+import type { Comment, CommentLevel, ActiveTab, UserRole } from '../types';
 import { uid, stripHtml, formatDisplayName } from './commentUtils';
-import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI } from './commentApi';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI, fetchCurrentUserEmail, fetchUserRole, saveUserRole } from './commentApi';
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
@@ -15,6 +15,34 @@ export function useCommentPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  const [userEmail, setUserEmail] = useState('');
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
+
+  useEffect(() => {
+    fetchCurrentUserEmail().then(({ email }) => {
+      setUserEmail(email);
+      if (!user) setUser(formatDisplayName(email.split('@')[0]));
+      fetchUserRole(email).then(role => {
+        if (role) {
+          setUserRole(role);
+        } else {
+          setShowRoleModal(true);
+        }
+      });
+    });
+  }, []);
+
+  const handleSelectRole = async (role: UserRole) => {
+    if (userEmail) {
+      await saveUserRole(userEmail, role);
+    }
+    setUserRole(role);
+    setShowRoleModal(false);
+    addToast('ok', `Logged in with role: ${role}`);
+  };
 
   const [lastOpened] = useState<Date>(() => {
     const stored = localStorage.getItem('sac-last-opened');
@@ -132,6 +160,7 @@ export function useCommentPage() {
   /* ── Computed ─────────────────────────────────────────────── */
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
   const wb_keysStr = buildFilterValuesStr(filters) ?? 'DefaultContext';
+  const isValidSACSelection = Object.keys(filters).filter(k => k !== 'Dashboard').length > 0;
   const visibleComments = comments.filter(c => c.level === level);
   const newCommentCount = comments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
 
@@ -150,6 +179,7 @@ export function useCommentPage() {
       wb_keys: wb_keysStr,
       dashboard: dashboard,
       created_at: { value: new Date().toISOString() },
+      is_private: isPrivate,
     };
     try {
       await saveComment(payload, !!editingId);
@@ -172,6 +202,7 @@ export function useCommentPage() {
     setEditingId(null);
     setAiMode(false);
     setAiHtml('');
+    setIsPrivate(false);
   };
 
   const handleEdit = (c: Comment) => {
@@ -179,7 +210,21 @@ export function useCommentPage() {
     setEditorHtml(c.content);
     setEditorKey(k => k + 1);
     setAiMode(false);
+    setIsPrivate(!!c.is_private);
     setActiveTab('post');
+  };
+
+  const handlePublishPrivate = async (c: Comment) => {
+    const updatedComment: Comment = { ...c, is_private: false };
+    try {
+      await saveComment(updatedComment, true);
+      const updated = comments.map(item => (item.id === c.id ? updatedComment : item));
+      setComments(updated);
+      cacheComments(filterStr, updated);
+      addToast('ok', 'Comment published for wider audience.');
+    } catch (err) {
+      addToast('err', `Failed to publish: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -243,6 +288,19 @@ export function useCommentPage() {
     setAiHtml('');
   };
 
+  const [lockDate, setLockDate] = useState(() => localStorage.getItem('admin_lock_date') || '');
+  const [allowPrivateConfig, setAllowPrivateConfig] = useState(() => (localStorage.getItem('admin_allow_private') ?? 'true') === 'true');
+  const [notifyEmail, setNotifyEmail] = useState(() => localStorage.getItem('admin_notify_email') || 'sac-alerts@datalinksoftware.com');
+  const [defaultLevelConfig, setDefaultLevelConfig] = useState<CommentLevel>(() => (localStorage.getItem('admin_default_level') as CommentLevel) || 'page');
+
+  const handleSaveAdminConfig = () => {
+    localStorage.setItem('admin_lock_date', lockDate);
+    localStorage.setItem('admin_allow_private', String(allowPrivateConfig));
+    localStorage.setItem('admin_notify_email', notifyEmail);
+    localStorage.setItem('admin_default_level', defaultLevelConfig);
+    addToast('ok', 'Admin configuration saved successfully!');
+  };
+
   return {
     activeTab, setActiveTab, level, setLevel, comments, user,
     editorHtml, setEditorHtml, editorKey, editingId,
@@ -250,6 +308,11 @@ export function useCommentPage() {
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, aiLoading,
     visibleComments, newCommentCount,
+    userEmail, userRole, showRoleModal, setShowRoleModal, handleSelectRole,
+    isPrivate, setIsPrivate, handlePublishPrivate, isValidSACSelection,
+    lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
+    notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
+    handleSaveAdminConfig,
     handleSave, handleEdit, handleDelete, resetPost,
     openSummary, handleAiRewrite, acceptAllAi, addToast,
     handleTestFilter, handleClearRowFilters,

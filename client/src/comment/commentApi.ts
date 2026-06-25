@@ -1,4 +1,4 @@
-import type { Comment } from '../types';
+import type { Comment, UserRole } from '../types';
 
 const API_BASE = '/api';
 const CACHE_KEY = (filter: string) => `c_${filter}`;
@@ -76,4 +76,49 @@ export function buildFilterStr(filters: Record<string, string>): string | null {
 export function buildFilterValuesStr(filters: Record<string, string>): string | null {
   const keys = Object.keys(filters);
   return keys.length ? keys.map(k => filters[k]).join(';') : null;
+}
+
+export async function fetchCurrentUserEmail(): Promise<{ email: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/user/me`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data && data.email ? data : { email: 'guest.user@datalinksoftware.com' };
+  } catch {
+    // Graceful fallback since backend will be added separately
+    const cachedEmail = localStorage.getItem('cur_user_email') || 'guest.user@datalinksoftware.com';
+    return { email: cachedEmail };
+  }
+}
+
+export async function fetchUserRole(email: string): Promise<UserRole | null> {
+  try {
+    const params = new URLSearchParams({ email });
+    const res = await fetch(`${API_BASE}/user/role?${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data && data.role) {
+      localStorage.setItem(`role_${email}`, data.role);
+      return data.role as UserRole;
+    }
+    throw new Error('Role not found in API');
+  } catch {
+    // Cross-reference from local table/storage when backend is not yet present
+    const storedRole = localStorage.getItem(`role_${email}`);
+    return storedRole ? (storedRole as UserRole) : null;
+  }
+}
+
+export async function saveUserRole(email: string, role: UserRole): Promise<void> {
+  // Store locally immediately for reliable cross-referencing
+  localStorage.setItem(`role_${email}`, role);
+  try {
+    await fetch(`${API_BASE}/user/role`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role }),
+    });
+  } catch {
+    // Backend to be added separately; silent catch since local table storage succeeded
+  }
 }

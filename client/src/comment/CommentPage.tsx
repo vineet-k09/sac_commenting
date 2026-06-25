@@ -51,6 +51,11 @@ export default function CommentPage() {
     filters, isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, visibleComments, newCommentCount,
+    userEmail, userRole, showRoleModal, setShowRoleModal, handleSelectRole,
+    isPrivate, setIsPrivate, handlePublishPrivate, isValidSACSelection,
+    lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
+    notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
+    handleSaveAdminConfig,
     handleSave, handleEdit, resetPost, handleDelete, openSummary,
     handleAiRewrite, acceptAllAi,
     handleTestFilter, handleClearRowFilters,
@@ -76,7 +81,15 @@ export default function CommentPage() {
       {/* Header */}
       <div className="cp-header">
         <div className="cp-header-inner">
-          <IcoChat /><h1 className="cp-title">SAC Comments</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <IcoChat /><h1 className="cp-title">SAC Comments</h1>
+          </div>
+          <div className="cp-header-role">
+            <span className="cp-user-email">{userEmail || 'Guest'}</span>
+            <button className="cp-role-badge" onClick={() => setShowRoleModal(true)} title="Click to change role">
+              {userRole ? `Role: ${userRole}` : 'Select Role'} ▾
+            </button>
+          </div>
         </div>
       </div>
 
@@ -87,12 +100,19 @@ export default function CommentPage() {
           <span className="cp-tab-badge">{visibleComments.length}</span>
           {newCommentCount > 0 && <span className="cp-tab-dot" />}
         </button>
-        <button className={`cp-tab${activeTab === 'post' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('post')} id="tab-post">
-          <IcoPen /> {editingId ? 'Editing' : 'Post'}
-        </button>
+        {userRole !== 'Viewer' && (
+          <button className={`cp-tab${activeTab === 'post' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('post')} id="tab-post">
+            <IcoPen /> {editingId ? 'Editing' : 'Post'}
+          </button>
+        )}
         <button className={`cp-tab${activeTab === 'ai' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('ai')} id="tab-ai">
           <IcoAI /> Ask AI
         </button>
+        {userRole === 'Admin' && (
+          <button className={`cp-tab${activeTab === 'admin' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('admin')} id="tab-admin">
+            <IcoFilter /> Admin Config
+          </button>
+        )}
       </div>
 
       {/* ══ COMMENTS TAB ══ */}
@@ -134,25 +154,33 @@ export default function CommentPage() {
 
           {/* Comment list */}
           <div className="cp-comments-list">
-            {isLoading ? (
+            {!isValidSACSelection ? (
+              <div className="cp-invalid-selection-box">
+                <div className="cp-invalid-icon"><IcoFilter /></div>
+                <h3>SAC Context Required</h3>
+                <p>Ensure comments are visible only after post completion and valid SAC selections (at least one dimension filter present in context).</p>
+                <button className="cp-btn-primary" onClick={handleTestFilter}>Apply Test SAC Context</button>
+              </div>
+            ) : isLoading ? (
               [0, 1, 2].map(i => <SkeletonCard key={i} index={i} />)
-            ) : visibleComments.length === 0 ? (
+            ) : visibleComments.filter(c => c.is_private ? (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user) || !c.user) : true).length === 0 ? (
               <div className="cp-empty">
                 <div className="cp-empty-icon"><IcoChat /></div>
                 <p>No {level}-level comments yet.</p>
-                <button className="cp-link-btn" onClick={() => setActiveTab('post')}>Be the first to add one →</button>
+                {userRole !== 'Viewer' && <button className="cp-link-btn" onClick={() => setActiveTab('post')}>Be the first to add one →</button>}
               </div>
             ) : (
-              groupByDate(visibleComments).map(({ label, items }) => (
+              groupByDate(visibleComments.filter(c => c.is_private ? (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user) || !c.user) : true)).map(({ label, items }) => (
                 <div key={label}>
                   <div className="cp-date-divider"><span>{label}</span></div>
                   {items.map((c: Comment, i: number) => {
                     const { relative, absolute } = formatTs(c.created_at?.value);
                     const accent = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const isNew = new Date(c.created_at?.value) > lastOpened;
+                    const isLocked = lockDate && c.created_at?.value ? new Date(c.created_at.value) < new Date(lockDate) : false;
                     return (
                       <div key={c.id}
-                        className={`cp-card${isNew ? ' cp-card--new' : ''}${c.level === 'row' ? ' cp-card--row' : ''}`}
+                        className={`cp-card${isNew ? ' cp-card--new' : ''}${c.level === 'row' ? ' cp-card--row' : ''}${c.is_private ? ' cp-card--private' : ''}`}
                         style={{ '--accent': c.level === 'row' ? 'linear-gradient(180deg,#C8102E,#0f1f6e)' : 'linear-gradient(180deg,#0f1f6e,#1e56c8)', animationDelay: `${i * 0.05}s` } as React.CSSProperties}>
                         <div className="cp-card-accent" />
                         <div className="cp-card-body">
@@ -162,17 +190,29 @@ export default function CommentPage() {
                               <div className="cp-username-row">
                                 <span className="cp-username">{formatDisplayName(c.user)}</span>
                                 {isNew && <span className="cp-new-badge">New</span>}
+                                {c.is_private && <span className="cp-private-badge">Private</span>}
                               </div>
                               <span className="cp-ts" title={absolute}>{relative} · {absolute}</span>
                             </div>
                             <div className="cp-card-actions">
+                              {c.is_private && (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user)) && (
+                                <button className="cp-publish-btn" onClick={() => handlePublishPrivate(c)} title="Publish for wider audience">Publish</button>
+                              )}
                               {c.level === 'row' && (
                                 <button className="cp-icon-btn" onClick={() => toggleRowFilter(c.id)} title={hiddenRowFilters.has(c.id) ? "Show context filters" : "Hide context filters"}>
                                   {hiddenRowFilters.has(c.id) ? <IcoEyeOff /> : <IcoEye />}
                                 </button>
                               )}
-                              <button className="cp-icon-btn" onClick={() => handleEdit(c)} title="Edit comment"><IcoEdit /></button>
-                              <button className="cp-icon-btn cp-icon-btn--delete" onClick={() => handleDelete(c.id)} title="Delete comment"><IcoTrash /></button>
+                              {userRole !== 'Viewer' && (
+                                isLocked ? (
+                                  <span className="cp-locked-badge" title={`Locked by Admin (cut-off date: ${lockDate})`}>🔒 Locked</span>
+                                ) : (
+                                  <>
+                                    <button className="cp-icon-btn" onClick={() => handleEdit(c)} title="Edit comment"><IcoEdit /></button>
+                                    <button className="cp-icon-btn cp-icon-btn--delete" onClick={() => handleDelete(c.id)} title="Delete comment"><IcoTrash /></button>
+                                  </>
+                                )
+                              )}
                             </div>
                           </div>
 
@@ -205,43 +245,69 @@ export default function CommentPage() {
       {/* ══ POST TAB ══ */}
       {activeTab === 'post' && (
         <div className="cp-panel">
-          <div className="cp-field">
-            <label className="cp-label">Posting as</label>
-            <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{user || 'Waiting for SAC context…'}</span></div>
-          </div>
-          <div className="cp-field">
-            <label className="cp-label">Comment Level</label>
-            <div className="cp-level-toggle">
-              <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')}><IcoPage /> Page</button>
-              <button className={`cp-level-btn${level === 'row' ? ' active' : ''}`} onClick={() => setLevel('row')}><IcoRow /> Row</button>
+          {!isValidSACSelection ? (
+            <div className="cp-invalid-selection-box">
+              <div className="cp-invalid-icon"><IcoFilter /></div>
+              <h3>SAC Context Required</h3>
+              <p>Please make valid SAC selections (at least one dimension filter) before posting a comment.</p>
+              <button className="cp-btn-primary" onClick={handleTestFilter}>Apply Test SAC Context</button>
             </div>
-          </div>
-          <div className="cp-field">
-            <label className="cp-label">Comment</label>
-            <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
-          </div>
+          ) : userRole === 'Viewer' ? (
+            <div className="cp-invalid-selection-box">
+              <h3>Access Denied</h3>
+              <p>Your current role (Viewer) does not permit posting or editing comments.</p>
+            </div>
+          ) : (
+            <>
+              <div className="cp-field">
+                <label className="cp-label">Posting as</label>
+                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{user || 'Waiting for SAC context…'}</span></div>
+              </div>
+              <div className="cp-field">
+                <label className="cp-label">Comment Level</label>
+                <div className="cp-level-toggle">
+                  <button className={`cp-level-btn${level === 'page' ? ' active' : ''}`} onClick={() => setLevel('page')}><IcoPage /> Page</button>
+                  <button className={`cp-level-btn${level === 'row' ? ' active' : ''}`} onClick={() => setLevel('row')}><IcoRow /> Row</button>
+                </div>
+              </div>
+              {allowPrivateConfig && (
+                <div className="cp-field">
+                  <label className="cp-label">Comment Visibility</label>
+                  <label className="cp-toggle-label">
+                    <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} />
+                    <span className="cp-toggle-slider"></span>
+                    <span className="cp-toggle-text">Private Comment (Only visible to you until published)</span>
+                  </label>
+                </div>
+              )}
+              <div className="cp-field">
+                <label className="cp-label">Comment</label>
+                <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
+              </div>
 
-          {aiMode && (
-            <div className="cp-ai-panel">
-              <div className="cp-ai-header">
-                <span className="cp-ai-badge"><IcoAI /> AI Rewrite</span>
-                <button className="cp-link-btn" onClick={resetPost}>✕ Cancel</button>
+              {aiMode && (
+                <div className="cp-ai-panel">
+                  <div className="cp-ai-header">
+                    <span className="cp-ai-badge"><IcoAI /> AI Rewrite</span>
+                    <button className="cp-link-btn" onClick={resetPost}>✕ Cancel</button>
+                  </div>
+                  <div className="cp-ai-preview" dangerouslySetInnerHTML={{ __html: aiHtml }} />
+                  <div className="cp-ai-actions">
+                    <button className="cp-btn-primary" onClick={acceptAllAi}>Accept Rewrite</button>
+                    <button className="cp-btn-ghost" onClick={() => setActiveTab('post')}>Dismiss</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="cp-actions">
+                <button className="cp-btn-primary" onClick={handleSave} id="btn-post"><IcoSend /> {editingId ? 'Save Changes' : 'Post Comment'}</button>
+                <button className="cp-btn-ghost" onClick={resetPost}>Cancel</button>
+                <button className="cp-btn-ai" onClick={handleAiRewrite} disabled={!editorHtml || stripHtml(editorHtml).length < 5} id="btn-ai-rewrite">
+                  <IcoAI /> Generate
+                </button>
               </div>
-              <div className="cp-ai-preview" dangerouslySetInnerHTML={{ __html: aiHtml }} />
-              <div className="cp-ai-actions">
-                <button className="cp-btn-primary" onClick={acceptAllAi}>Accept Rewrite</button>
-                <button className="cp-btn-ghost" onClick={() => setActiveTab('post')}>Dismiss</button>
-              </div>
-            </div>
+            </>
           )}
-
-          <div className="cp-actions">
-            <button className="cp-btn-primary" onClick={handleSave} id="btn-post"><IcoSend /> {editingId ? 'Save Changes' : 'Post Comment'}</button>
-            <button className="cp-btn-ghost" onClick={resetPost}>Cancel</button>
-            <button className="cp-btn-ai" onClick={handleAiRewrite} disabled={!editorHtml || stripHtml(editorHtml).length < 5} id="btn-ai-rewrite">
-              <IcoAI /> Generate
-            </button>
-          </div>
         </div>
       )}
 
@@ -252,6 +318,58 @@ export default function CommentPage() {
             <div className="cp-ai-page-icon"><IcoAI /></div>
             <h2 className="cp-ai-page-title">AI Dashboard Assistant</h2>
             <p className="cp-ai-page-sub">Ask questions about your dashboard data, get trend analysis, and surface key insights — all in context.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ══ ADMIN CONFIG TAB ══ */}
+      {activeTab === 'admin' && (
+        <div className="cp-panel cp-config">
+          <div className="cp-ai-page-hero" style={{ padding: '20px', marginBottom: '8px' }}>
+            <h2 className="cp-ai-page-title">Admin Governance & Configuration</h2>
+            <p className="cp-ai-page-sub">Configure global comment locking cut-off dates, default posting levels, visibility rules, and notification targets.</p>
+          </div>
+
+          <div className="cp-config-section">
+            <h3 className="cp-config-title">Comment Locking</h3>
+            <p className="cp-config-desc">Define a cut-off date. Comments created prior to this date will be locked and cannot be edited or deleted.</p>
+            <div className="cp-field">
+              <label className="cp-label">Lock Cut-off Date</label>
+              <input type="date" className="cp-input" value={lockDate} onChange={e => setLockDate(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="cp-config-section">
+            <h3 className="cp-config-title">Comment Visibility & Defaults</h3>
+            <p className="cp-config-desc">Control whether contributors can post private comments and set the default comment level.</p>
+            <div className="cp-field">
+              <label className="cp-label">Allow Private Comments</label>
+              <label className="cp-toggle-label">
+                <input type="checkbox" checked={allowPrivateConfig} onChange={e => setAllowPrivateConfig(e.target.checked)} />
+                <span className="cp-toggle-slider"></span>
+                <span className="cp-toggle-text">{allowPrivateConfig ? 'Enabled (Contributors can create private comments)' : 'Disabled (All comments are public)'}</span>
+              </label>
+            </div>
+            <div className="cp-field" style={{ marginTop: '12px' }}>
+              <label className="cp-label">Default Comment Level</label>
+              <div className="cp-level-toggle" style={{ alignSelf: 'flex-start' }}>
+                <button className={`cp-level-btn${defaultLevelConfig === 'page' ? ' active' : ''}`} onClick={() => setDefaultLevelConfig('page')}><IcoPage /> Page</button>
+                <button className={`cp-level-btn${defaultLevelConfig === 'row' ? ' active' : ''}`} onClick={() => setDefaultLevelConfig('row')}><IcoRow /> Row</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="cp-config-section">
+            <h3 className="cp-config-title">Notification Triggers</h3>
+            <p className="cp-config-desc">Define the target email address for automated alerts on comment submission or publishing.</p>
+            <div className="cp-field">
+              <label className="cp-label">Alert Recipient Email</label>
+              <input type="email" className="cp-input" value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)} placeholder="alerts@datalinksoftware.com" />
+            </div>
+          </div>
+
+          <div className="cp-actions" style={{ marginTop: '8px' }}>
+            <button className="cp-btn-primary" onClick={handleSaveAdminConfig}>Save Configuration</button>
           </div>
         </div>
       )}
@@ -280,6 +398,38 @@ export default function CommentPage() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Role Selection Modal */}
+      {showRoleModal && (
+        <>
+          <div className="cp-modal-backdrop" onClick={() => userRole && setShowRoleModal(false)} />
+          <div className="cp-modal">
+            <div className="cp-modal-header">
+              <h2>Select Your Role</h2>
+              {userRole && <button className="cp-modal-close" onClick={() => setShowRoleModal(false)}>✕</button>}
+            </div>
+            <p className="cp-modal-sub">Choose a role to define your view and edit permissions for this session.</p>
+            <div className="cp-role-grid">
+              <button className={`cp-role-card${userRole === 'Admin' ? ' active' : ''}`} onClick={() => handleSelectRole('Admin')}>
+                <h3>Admin</h3>
+                <p>Full access to view, post, edit, delete, and publish all comments.</p>
+              </button>
+              <button className={`cp-role-card${userRole === 'Editor' ? ' active' : ''}`} onClick={() => handleSelectRole('Editor')}>
+                <h3>Editor</h3>
+                <p>Can view all comments, post new comments, and edit/delete own comments.</p>
+              </button>
+              <button className={`cp-role-card${userRole === 'Contributor' ? ' active' : ''}`} onClick={() => handleSelectRole('Contributor')}>
+                <h3>Contributor</h3>
+                <p>Can view comments, post private or public comments, and manage own posts.</p>
+              </button>
+              <button className={`cp-role-card${userRole === 'Viewer' ? ' active' : ''}`} onClick={() => handleSelectRole('Viewer')}>
+                <h3>Viewer</h3>
+                <p>Read-only access. Cannot post, edit, or delete any comments.</p>
+              </button>
             </div>
           </div>
         </>
