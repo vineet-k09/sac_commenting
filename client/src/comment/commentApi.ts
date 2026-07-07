@@ -78,7 +78,7 @@ export function buildFilterValuesStr(filters: Record<string, string>): string | 
   return keys.length ? keys.map(k => filters[k]).join(';') : null;
 }
 
-export async function fetchCurrentUserEmail(username: string = 'guest.user@datalinksoftware.com'): Promise<{ email: string; success?: boolean }> {
+export async function fetchCurrentUserEmail(username: string = 'hermione.granger@vodafone.com'): Promise<{ email: string; success?: boolean }> {
   try {
     const res = await fetch(`${API_BASE}/me`, {
       method: 'POST',
@@ -90,8 +90,12 @@ export async function fetchCurrentUserEmail(username: string = 'guest.user@datal
     return data && data.email ? data : { email: username, success: true };
   } catch {
     // Graceful fallback since backend will be added separately
-    const cachedEmail = localStorage.getItem('cur_user_email') || username;
-    return { email: cachedEmail, success: true };
+    const cachedEmail = localStorage.getItem('cur_user_email');
+    if (cachedEmail === 'guest.user@datalinksoftware.com') {
+      localStorage.setItem('cur_user_email', username);
+      return { email: username, success: true };
+    }
+    return { email: cachedEmail || username, success: true };
   }
 }
 
