@@ -78,16 +78,24 @@ export function buildFilterValuesStr(filters: Record<string, string>): string | 
   return keys.length ? keys.map(k => filters[k]).join(';') : null;
 }
 
-export async function fetchCurrentUserEmail(): Promise<{ email: string }> {
+export async function fetchCurrentUserEmail(username: string = 'hermione.granger@vodafone.com'): Promise<{ email: string; success?: boolean }> {
   try {
-    const res = await fetch(`${API_BASE}/user/me`);
+    const res = await fetch(`${API_BASE}/me`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username }),
+    });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return data && data.email ? data : { email: 'guest.user@datalinksoftware.com' };
+    return data && data.email ? data : { email: username, success: true };
   } catch {
     // Graceful fallback since backend will be added separately
-    const cachedEmail = localStorage.getItem('cur_user_email') || 'guest.user@datalinksoftware.com';
-    return { email: cachedEmail };
+    const cachedEmail = localStorage.getItem('cur_user_email');
+    if (cachedEmail === 'guest.user@datalinksoftware.com') {
+      localStorage.setItem('cur_user_email', username);
+      return { email: username, success: true };
+    }
+    return { email: cachedEmail || username, success: true };
   }
 }
 

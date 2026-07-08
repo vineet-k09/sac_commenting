@@ -2033,7 +2033,7 @@
   color: rgba(255, 255, 255, 0.85);
 }
 
-.cp-role-badge {
+.cp-role-badge-static {
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 4px 10px;
@@ -2041,15 +2041,9 @@
   color: #fff;
   font-size: 11px;
   font-weight: 600;
-  cursor: pointer;
   backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
 }
 
-.cp-role-badge:hover {
-  background: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
 
 .cp-modal-backdrop {
   position: fixed;
@@ -2156,13 +2150,76 @@
 .cp-private-badge {
   font-size: 9px;
   font-weight: 700;
-  background: #94a3b8;
+  background: #64748b;
   color: #fff;
   padding: 2px 6px;
   border-radius: 10px;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
+
+.cp-public-badge {
+  font-size: 9px;
+  font-weight: 700;
+  background: #10b981;
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.cp-visibility-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-strong);
+  margin-top: 4px;
+}
+
+.cp-visibility-status {
+  font-size: 11.5px;
+  color: var(--text-2);
+}
+
+.cp-visibility-status strong {
+  color: var(--c-blue-mid);
+}
+
+.cp-btn-toggle-visibility {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: #fff;
+  color: var(--c-blue);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.cp-btn-toggle-visibility:hover {
+  background: var(--grad-soft);
+  border-color: var(--c-blue-mid);
+  transform: translateY(-1px);
+}
+
+.cp-lock-btn {
+  color: var(--text-3) !important;
+}
+
+.cp-lock-btn:hover {
+  color: var(--c-blue) !important;
+  background: var(--grad-soft) !important;
+  border-color: var(--c-blue-mid) !important;
+}
+
 
 .cp-publish-btn {
   padding: 3px 10px;

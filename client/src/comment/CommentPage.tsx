@@ -23,6 +23,8 @@ const IcoUser = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none
 const IcoFilter = () => <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></svg>;
 const IcoEye = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>;
 const IcoEyeOff = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>;
+const IcoLock = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>;
+const IcoUnlock = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg>;
 const IcoChevron = ({ open }: { open: boolean }) => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
     style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
@@ -51,7 +53,7 @@ export default function CommentPage() {
     filters, isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, visibleComments, newCommentCount,
-    userEmail, userRole, showRoleModal, setShowRoleModal, handleSelectRole,
+    userEmail, userRole,
     isPrivate, setIsPrivate, handlePublishPrivate, isValidSACSelection,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
@@ -59,6 +61,7 @@ export default function CommentPage() {
     handleSave, handleEdit, resetPost, handleDelete, openSummary,
     handleAiRewrite, acceptAllAi,
     handleTestFilter, handleClearRowFilters,
+    lockedCommentIds, toggleLockComment,
   } = useCommentPage();
 
   const [filtersExpanded, setFiltersExpanded] = useState(false);
@@ -86,9 +89,9 @@ export default function CommentPage() {
           </div>
           <div className="cp-header-role">
             <span className="cp-user-email">{userEmail || 'Guest'}</span>
-            <button className="cp-role-badge" onClick={() => setShowRoleModal(true)} title="Click to change role">
-              {userRole ? `Role: ${userRole}` : 'Select Role'} ▾
-            </button>
+            <span className="cp-role-badge-static">
+              {userRole ? `Role: ${userRole}` : 'Checking Role...'}
+            </span>
           </div>
         </div>
       </div>
@@ -163,21 +166,21 @@ export default function CommentPage() {
               </div>
             ) : isLoading ? (
               [0, 1, 2].map(i => <SkeletonCard key={i} index={i} />)
-            ) : visibleComments.filter(c => c.is_private ? (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user) || !c.user) : true).length === 0 ? (
+            ) : visibleComments.length === 0 ? (
               <div className="cp-empty">
                 <div className="cp-empty-icon"><IcoChat /></div>
                 <p>No {level}-level comments yet.</p>
                 {userRole !== 'Viewer' && <button className="cp-link-btn" onClick={() => setActiveTab('post')}>Be the first to add one →</button>}
               </div>
             ) : (
-              groupByDate(visibleComments.filter(c => c.is_private ? (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user) || !c.user) : true)).map(({ label, items }) => (
+              groupByDate(visibleComments).map(({ label, items }) => (
                 <div key={label}>
                   <div className="cp-date-divider"><span>{label}</span></div>
                   {items.map((c: Comment, i: number) => {
                     const { relative, absolute } = formatTs(c.created_at?.value);
                     const accent = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const isNew = new Date(c.created_at?.value) > lastOpened;
-                    const isLocked = lockDate && c.created_at?.value ? new Date(c.created_at.value) < new Date(lockDate) : false;
+                    const isLocked = (lockDate && c.created_at?.value && new Date(c.created_at.value) < new Date(lockDate)) || (lockedCommentIds || []).includes(c.id);
                     return (
                       <div key={c.id}
                         className={`cp-card${isNew ? ' cp-card--new' : ''}${c.level === 'row' ? ' cp-card--row' : ''}${c.is_private ? ' cp-card--private' : ''}`}
@@ -190,7 +193,11 @@ export default function CommentPage() {
                               <div className="cp-username-row">
                                 <span className="cp-username">{formatDisplayName(c.user)}</span>
                                 {isNew && <span className="cp-new-badge">New</span>}
-                                {c.is_private && <span className="cp-private-badge">Private</span>}
+                                {c.is_private ? (
+                                  <span className="cp-private-badge">Private Comment</span>
+                                ) : (
+                                  <span className="cp-public-badge">Public Comment</span>
+                                )}
                               </div>
                               <span className="cp-ts" title={absolute}>{relative} · {absolute}</span>
                             </div>
@@ -203,9 +210,26 @@ export default function CommentPage() {
                                   {hiddenRowFilters.has(c.id) ? <IcoEyeOff /> : <IcoEye />}
                                 </button>
                               )}
+                              {userRole === 'Admin' && (
+                                <>
+                                  {isLocked && <span className="cp-locked-badge" title="Locked by Admin">🔒 Locked</span>}
+                                  <button
+                                    className="cp-icon-btn cp-lock-btn"
+                                    onClick={() => toggleLockComment(c.id)}
+                                    title={isLocked ? "Unlock comment" : "Lock comment"}
+                                  >
+                                    {isLocked ? <IcoUnlock /> : <IcoLock />}
+                                  </button>
+                                </>
+                              )}
                               {userRole !== 'Viewer' && (
                                 isLocked ? (
-                                  <span className="cp-locked-badge" title={`Locked by Admin (cut-off date: ${lockDate})`}>🔒 Locked</span>
+                                  userRole === 'Admin' && (
+                                    <>
+                                      <button className="cp-icon-btn" onClick={() => handleEdit(c)} title="Edit comment"><IcoEdit /></button>
+                                      <button className="cp-icon-btn cp-icon-btn--delete" onClick={() => handleDelete(c.id)} title="Delete comment"><IcoTrash /></button>
+                                    </>
+                                  )
                                 ) : (
                                   <>
                                     <button className="cp-icon-btn" onClick={() => handleEdit(c)} title="Edit comment"><IcoEdit /></button>
@@ -270,16 +294,21 @@ export default function CommentPage() {
                   <button className={`cp-level-btn${level === 'row' ? ' active' : ''}`} onClick={() => setLevel('row')}><IcoRow /> Row</button>
                 </div>
               </div>
-              {allowPrivateConfig && (
-                <div className="cp-field">
-                  <label className="cp-label">Comment Visibility</label>
-                  <label className="cp-toggle-label">
-                    <input type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)} />
-                    <span className="cp-toggle-slider"></span>
-                    <span className="cp-toggle-text">Private Comment (Only visible to you until published)</span>
-                  </label>
+              <div className="cp-field">
+                <label className="cp-label">Comment Visibility</label>
+                <div className="cp-visibility-row">
+                  <span className={`cp-visibility-status ${isPrivate ? 'status-private' : 'status-public'}`}>
+                    Currently: <strong>{isPrivate ? 'Private Comment' : 'Public Comment'}</strong>
+                  </span>
+                  <button
+                    type="button"
+                    className="cp-btn-toggle-visibility"
+                    onClick={() => setIsPrivate(prev => !prev)}
+                  >
+                    {isPrivate ? 'Turn Public' : 'Turn Private'}
+                  </button>
                 </div>
-              )}
+              </div>
               <div className="cp-field">
                 <label className="cp-label">Comment</label>
                 <RichTextEditor key={editorKey} initialContent={editorHtml} onChange={setEditorHtml} />
@@ -403,37 +432,7 @@ export default function CommentPage() {
         </>
       )}
 
-      {/* Role Selection Modal */}
-      {showRoleModal && (
-        <>
-          <div className="cp-modal-backdrop" onClick={() => userRole && setShowRoleModal(false)} />
-          <div className="cp-modal">
-            <div className="cp-modal-header">
-              <h2>Select Your Role</h2>
-              {userRole && <button className="cp-modal-close" onClick={() => setShowRoleModal(false)}>✕</button>}
-            </div>
-            <p className="cp-modal-sub">Choose a role to define your view and edit permissions for this session.</p>
-            <div className="cp-role-grid">
-              <button className={`cp-role-card${userRole === 'Admin' ? ' active' : ''}`} onClick={() => handleSelectRole('Admin')}>
-                <h3>Admin</h3>
-                <p>Full access to view, post, edit, delete, and publish all comments.</p>
-              </button>
-              <button className={`cp-role-card${userRole === 'Editor' ? ' active' : ''}`} onClick={() => handleSelectRole('Editor')}>
-                <h3>Editor</h3>
-                <p>Can view all comments, post new comments, and edit/delete own comments.</p>
-              </button>
-              <button className={`cp-role-card${userRole === 'Contributor' ? ' active' : ''}`} onClick={() => handleSelectRole('Contributor')}>
-                <h3>Contributor</h3>
-                <p>Can view comments, post private or public comments, and manage own posts.</p>
-              </button>
-              <button className={`cp-role-card${userRole === 'Viewer' ? ' active' : ''}`} onClick={() => handleSelectRole('Viewer')}>
-                <h3>Viewer</h3>
-                <p>Read-only access. Cannot post, edit, or delete any comments.</p>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>

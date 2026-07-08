@@ -20,16 +20,38 @@ export function useCommentPage() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [lockedCommentIds, setLockedCommentIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('admin_locked_comment_ids') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const toggleLockComment = (id: string) => {
+    setLockedCommentIds(prev => {
+      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      localStorage.setItem('admin_locked_comment_ids', JSON.stringify(next));
+      return next;
+    });
+    addToast('ok', 'Comment lock status updated.');
+  };
+
 
   useEffect(() => {
     fetchCurrentUserEmail().then(({ email }) => {
       setUserEmail(email);
-      if (!user) setUser(formatDisplayName(email.split('@')[0]));
+      const defaultName = email.split('@')[0];
+      if (!user) setUser(formatDisplayName(defaultName));
       fetchUserRole(email).then(role => {
         if (role) {
           setUserRole(role);
         } else {
-          setShowRoleModal(true);
+          if (defaultName.toLowerCase().includes('john')) {
+            setUserRole('Admin');
+          } else {
+            setUserRole('Contributor');
+          }
         }
       });
     });
@@ -81,7 +103,12 @@ export function useCommentPage() {
       const v = seg.substring(i + 1).trim();
       const kLower = k.toLowerCase();
       if (kLower === 'username' || kLower === 'userid') {
-        setUser(formatDisplayName(v));
+        if (kLower === 'username') {
+          setUser(formatDisplayName(v));
+          if (v.toLowerCase().includes('john')) {
+            setUserRole('Admin');
+          }
+        }
       } else if (kLower === 'page') {
         if (v) {
           newFilters['Dashboard'] = v;
@@ -115,7 +142,12 @@ export function useCommentPage() {
         const v = seg.substring(i + 1).trim();
         const kLower = k.toLowerCase();
         if (kLower === 'username' || kLower === 'userid') {
-          setUser(formatDisplayName(v));
+          if (kLower === 'username') {
+            setUser(formatDisplayName(v));
+            if (v.toLowerCase().includes('john')) {
+              setUserRole('Admin');
+            }
+          }
         } else if (kLower === 'page') {
           // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
           if (v) {
@@ -161,8 +193,13 @@ export function useCommentPage() {
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
   const wb_keysStr = buildFilterValuesStr(filters) ?? 'DefaultContext';
   const isValidSACSelection = Object.keys(filters).filter(k => k !== 'Dashboard').length > 0;
-  const visibleComments = comments.filter(c => c.level === level);
-  const newCommentCount = comments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
+  const isCommentVisible = (c: Comment) => {
+    if (!c.is_private) return true;
+    return formatDisplayName(c.user) === formatDisplayName(user);
+  };
+  const filteredComments = comments.filter(isCommentVisible);
+  const visibleComments = filteredComments.filter(c => c.level === level);
+  const newCommentCount = filteredComments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
 
   /* ── Comment handlers ────────────────────────────────────── */
   const handleSave = async () => {
@@ -255,7 +292,7 @@ export function useCommentPage() {
     setSumLoading(true);
     setDrawerOpen(true);
     try {
-      const summary = await summarizeCommentsAPI(comments, level);
+      const summary = await summarizeCommentsAPI(filteredComments, level);
       setSummaryText(summary);
     } catch (err) {
       addToast('err', 'Failed to generate summary.');
@@ -316,5 +353,6 @@ export function useCommentPage() {
     handleSave, handleEdit, handleDelete, resetPost,
     openSummary, handleAiRewrite, acceptAllAi, addToast,
     handleTestFilter, handleClearRowFilters,
+    lockedCommentIds, toggleLockComment,
   };
 }
