@@ -10,8 +10,22 @@ export interface Comment {
   filter: string;
   dashboard: string;
   wb_keys: string;
+  is_private?: boolean;
+  is_locked?: boolean;
   timestamp: {value: string}; // ISO 8601
 }
+
+// export interface Comment {
+//   id: string; // from backend
+//   user: string;
+//   content: string;   // rich-text HTML
+//   level: CommentLevel;
+//   filter: string;        // "Key1:Val1;Key2:Val2" — full key+value context
+//   wb_keys: string;  // "Val1;Val2" — values only
+//   dashboard: string;
+//   created_at: {value: string}; // ISO 8601 
+//   is_private?: boolean;
+// }
 
 export interface WordSug {
   wordIdx: number;

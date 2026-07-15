@@ -14,6 +14,7 @@ export interface Comment {
   dashboard: string;
   created_at: {value: string}; // ISO 8601 
   is_private?: boolean;
+  is_locked?: boolean;
 }
 
 

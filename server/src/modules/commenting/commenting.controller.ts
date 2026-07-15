@@ -1,8 +1,6 @@
 import { Response } from "express";
 import { handleCreateComment, handleGetComments, handleDeleteComment, handlePutComment } from "./commenting.service";
-// repo -> database DATABASE
-// service -> business logic, validation, etc. BUSINESS LOGIC 
-// controller -> failure, request, resposnse, status code API
+
 export async function createComment(req: any, res: Response) {
     try {
         const result = await handleCreateComment(req.body, req.body?.username);

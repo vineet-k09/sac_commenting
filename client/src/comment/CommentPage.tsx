@@ -180,7 +180,7 @@ export default function CommentPage() {
                     const { relative, absolute } = formatTs(c.created_at?.value);
                     const accent = AVATAR_COLORS[i % AVATAR_COLORS.length];
                     const isNew = new Date(c.created_at?.value) > lastOpened;
-                    const isLocked = (lockDate && c.created_at?.value && new Date(c.created_at.value) < new Date(lockDate)) || (lockedCommentIds || []).includes(c.id);
+                    const isLocked = c.is_locked || (lockDate && c.created_at?.value && new Date(c.created_at.value) < new Date(lockDate)) || (lockedCommentIds || []).includes(c.id);
                     return (
                       <div key={c.id}
                         className={`cp-card${isNew ? ' cp-card--new' : ''}${c.level === 'row' ? ' cp-card--row' : ''}${c.is_private ? ' cp-card--private' : ''}`}

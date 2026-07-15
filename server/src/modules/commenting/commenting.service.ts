@@ -2,8 +2,16 @@ import { getComments, createComment, deleteComment, putComment } from "./comment
 import { Comment } from "./commenting.types";
 
 export async function handleCreateComment(data: Comment, username?: string){
-    const { user, content, level, filter, dashboard, wb_keys } = data;
-    const res = await createComment(username || user, content, level, filter, dashboard, wb_keys);
+    const { content, level, filter, dashboard, wb_keys } = data;
+    
+    // Backend defaults
+    const is_private = data.is_private ?? false;
+    const is_locked = data.is_locked ?? false;
+    
+    // Server is source of truth for identity: ignore data.user if frontend sends it
+    const finalUser = username || 'Anonymous';
+
+    const res = await createComment(finalUser, content, level, filter, dashboard, wb_keys, is_private, is_locked);
     return res;
 }
 
@@ -18,8 +26,16 @@ export async function handleDeleteComment(id: string){
 }
 
 export async function handlePutComment(id: string, data: Comment, username?: string){
-    const {user, content, level, filter} = data;
-    const res = await putComment(id, user, content, level, filter, username || user);
+    const { content, level, filter } = data;
+    
+    // Backend defaults
+    const is_private = data.is_private ?? false;
+    const is_locked = data.is_locked ?? false;
+    
+    // Server is source of truth for identity
+    const finalUser = username || 'Anonymous';
+
+    const res = await putComment(id, finalUser, content, level, filter, username || finalUser, is_private, is_locked);
     return res;
 }
 

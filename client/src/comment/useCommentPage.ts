@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
 import type { Comment, CommentLevel, ActiveTab, UserRole } from '../types';
 import { uid, stripHtml, formatDisplayName } from './commentUtils';
-import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI, fetchCurrentUserEmail, fetchUserRole, saveUserRole } from './commentApi';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI, fetchCurrentUserEmail, saveUserRole } from './commentApi';
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
@@ -20,7 +20,7 @@ export function useCommentPage() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
-  const [lockedCommentIds, setLockedCommentIds] = useState<string[]>(() => {
+  const [lockedCommentIds] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('admin_locked_comment_ids') || '[]');
     } catch {
@@ -28,32 +28,32 @@ export function useCommentPage() {
     }
   });
 
-  const toggleLockComment = (id: string) => {
-    setLockedCommentIds(prev => {
-      const next = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
-      localStorage.setItem('admin_locked_comment_ids', JSON.stringify(next));
-      return next;
-    });
-    addToast('ok', 'Comment lock status updated.');
+  const toggleLockComment = async (id: string) => {
+    const comment = comments.find(c => c.id === id);
+    if (!comment) return;
+
+    const updatedComment = { ...comment, is_locked: !comment.is_locked };
+    try {
+      await saveComment(updatedComment, true);
+      setComments(prev => prev.map(c => c.id === id ? updatedComment : c));
+      addToast('ok', `Comment ${updatedComment.is_locked ? 'locked' : 'unlocked'}.`);
+    } catch (err) {
+      addToast('err', 'Failed to update lock status.');
+    }
   };
 
 
   useEffect(() => {
-    fetchCurrentUserEmail().then(({ email }) => {
+    fetchCurrentUserEmail().then(({ email, role }) => {
       setUserEmail(email);
       const defaultName = email.split('@')[0];
       if (!user) setUser(formatDisplayName(defaultName));
-      fetchUserRole(email).then(role => {
-        if (role) {
-          setUserRole(role);
-        } else {
-          if (defaultName.toLowerCase().includes('john')) {
-            setUserRole('Admin');
-          } else {
-            setUserRole('Contributor');
-          }
-        }
-      });
+      if (role) {
+        setUserRole(role);
+      } else {
+        // Fallback or request role
+        setUserRole('Contributor'); 
+      }
     });
   }, []);
 

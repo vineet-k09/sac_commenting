@@ -78,24 +78,22 @@ export function buildFilterValuesStr(filters: Record<string, string>): string | 
   return keys.length ? keys.map(k => filters[k]).join(';') : null;
 }
 
-export async function fetchCurrentUserEmail(username: string = 'hermione.granger@vodafone.com'): Promise<{ email: string; success?: boolean }> {
+export async function fetchCurrentUserEmail(): Promise<{ email: string; role?: UserRole | null; success?: boolean }> {
   try {
     const res = await fetch(`${API_BASE}/me`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return data && data.email ? data : { email: username, success: true };
-  } catch {
-    // Graceful fallback since backend will be added separately
-    const cachedEmail = localStorage.getItem('cur_user_email');
-    if (cachedEmail === 'guest.user@datalinksoftware.com') {
-      localStorage.setItem('cur_user_email', username);
-      return { email: username, success: true };
-    }
-    return { email: cachedEmail || username, success: true };
+    return { 
+      email: data.email, 
+      role: data.role as UserRole, 
+      success: true 
+    };
+  } catch (err) {
+    console.error("Failed to fetch user:", err);
+    return { email: 'guest.user@datalinksoftware.com', role: 'Viewer', success: false };
   }
 }
 
@@ -105,28 +103,18 @@ export async function fetchUserRole(email: string): Promise<UserRole | null> {
     const res = await fetch(`${API_BASE}/user/role?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (data && data.role) {
-      localStorage.setItem(`role_${email}`, data.role);
-      return data.role as UserRole;
-    }
-    throw new Error('Role not found in API');
-  } catch {
-    // Cross-reference from local table/storage when backend is not yet present
-    const storedRole = localStorage.getItem(`role_${email}`);
-    return storedRole ? (storedRole as UserRole) : null;
+    return data.role as UserRole;
+  } catch (err) {
+    console.error("Failed to fetch role:", err);
+    return null;
   }
 }
 
 export async function saveUserRole(email: string, role: UserRole): Promise<void> {
-  // Store locally immediately for reliable cross-referencing
-  localStorage.setItem(`role_${email}`, role);
-  try {
-    await fetch(`${API_BASE}/user/role`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, role }),
-    });
-  } catch {
-    // Backend to be added separately; silent catch since local table storage succeeded
-  }
+  const res = await fetch(`${API_BASE}/user/role`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, role }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
