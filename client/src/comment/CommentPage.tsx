@@ -3,7 +3,7 @@ import RichTextEditor from '../ui/RichTextEditor';
 import ToastContainer from '../ui/ToastContainer';
 import SkeletonCard from '../ui/SkeletonCard';
 import { useCommentPage } from './useCommentPage';
-import { groupByDate, formatTs, getInitials, stripHtml, formatDisplayName } from './commentUtils';
+import { groupByDate, formatTs, getInitials, formatDisplayName } from './commentUtils';
 import type { Comment } from '../types';
 import './CommentPage.css';
 
@@ -58,8 +58,8 @@ export default function CommentPage() {
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
     handleSaveAdminConfig,
-    handleSave, handleEdit, resetPost, handleDelete, openSummary,
-    handleAiRewrite, acceptAllAi,
+    handleSave, handleEdit, resetPost, handleDelete, /*openSummary,
+    handleAiRewrite,*/ acceptAllAi,
     handleTestFilter, handleClearRowFilters,
     lockedCommentIds, toggleLockComment,
   } = useCommentPage();
@@ -108,9 +108,9 @@ export default function CommentPage() {
             <IcoPen /> {editingId ? 'Editing' : 'Post'}
           </button>
         )}
-        <button className={`cp-tab${activeTab === 'ai' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('ai')} id="tab-ai">
+        {/* <button className={`cp-tab${activeTab === 'ai' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('ai')} id="tab-ai">
           <IcoAI /> Ask AI
-        </button>
+        </button> */}
         {userRole === 'Admin' && (
           <button className={`cp-tab${activeTab === 'admin' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('admin')} id="tab-admin">
             <IcoFilter /> Admin Config
@@ -129,7 +129,7 @@ export default function CommentPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button className="cp-test-btn" onClick={handleTestFilter} title="Send demo SAC filter string">Test SAC</button>
               <button className="cp-test-btn" onClick={handleClearRowFilters} title="Clear row filters but keep dashboard">Clear Rows</button>
-              <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise"><IcoAI /> Summarise</button>
+              {/* <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise"><IcoAI /> Summarise</button> */}
             </div>
           </div>
 
@@ -331,9 +331,9 @@ export default function CommentPage() {
               <div className="cp-actions">
                 <button className="cp-btn-primary" onClick={handleSave} id="btn-post"><IcoSend /> {editingId ? 'Save Changes' : 'Post Comment'}</button>
                 <button className="cp-btn-ghost" onClick={resetPost}>Cancel</button>
-                <button className="cp-btn-ai" onClick={handleAiRewrite} disabled={!editorHtml || stripHtml(editorHtml).length < 5} id="btn-ai-rewrite">
+                {/* <button className="cp-btn-ai" onClick={handleAiRewrite} disabled={!editorHtml || stripHtml(editorHtml).length < 5} id="btn-ai-rewrite">
                   <IcoAI /> Generate
-                </button>
+                </button> */}
               </div>
             </>
           )}
