@@ -7,6 +7,7 @@ import path from 'path';
 
 const PORT = process.env.PORT || 3000;
 export var PROJECT_ID = process.env.PROJECT_ID;
+export var DB_NAME = process.env.DB_NAME
 console.log("Project ID:", PROJECT_ID);
 
 import commentingRoutes from './src/modules/commenting/commenting.routes';
