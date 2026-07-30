@@ -1,9 +1,8 @@
 import { BigQueryClient } from "../../shared/big-query/bq-client";
-
-// const DB_NAME = "vfgrp_sac_commenting";
+import { PROJECT_ID, DB_NAME } from "../../..";
 
 const getTable = () => {
-    return `${process.env.PROJECT_ID}.${process.env.DB_NAME}.users`;
+    return `${PROJECT_ID}.${DB_NAME}.users`;
 };
 
 const bq = new BigQueryClient();

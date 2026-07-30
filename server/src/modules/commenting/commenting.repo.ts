@@ -1,14 +1,14 @@
 import { randomUUID } from "crypto";
 import { BigQueryClient } from "../../shared/big-query/bq-client";
 import { CommentLevel } from "./commenting.types";
-// const DB_NAME = "vfgrp_sac_commenting";
+import { PROJECT_ID, DB_NAME } from "../../..";
 
 const getTable = () => {
-    return `${process.env.PROJECT_ID}.${process.env.DB_NAME}.comments`;
+    return `${PROJECT_ID}.${DB_NAME}.comments`;
 };
 
 const getHistoryTable = () => {
-    return `${process.env.PROJECT_ID}.${process.env.DB_NAME}.comment_history`;
+    return `${PROJECT_ID}.${DB_NAME}.comment_history`;
 };
 
 const bq = new BigQueryClient();
