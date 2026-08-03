@@ -1,4 +1,6 @@
 _secrets*
+.docker-prod*
+
 *node_modules/
 *dist/
 server/.env
