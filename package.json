@@ -13,6 +13,7 @@
   "license": "ISC",
   "author": "vineet, chidrupee",
   "scripts": {
+    "sa-keyfile": "gcloud iam service-accounts keys create sa-key.json --iam-account=sac-commentary@vf-grp-mirep-dev-beta.iam.gserviceaccount.com",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
     "dev": "concurrently -n server,client -c red,cyan \"npm run dev:server\" \"npm run dev:client\"",
@@ -23,7 +24,7 @@
     "preview:client": "cd client && vite preview",
     "deploy:og": "sh -c 'V=${1:-v1}; cd server && docker build -t sac-commenting-server:$V . && docker tag sac-commenting-server:$V europe-west1-docker.pkg.dev/vf-grp-aib-dev-dna-sbx-alpha/gcf-artifacts/sac-commenting-server:$V && docker push europe-west1-docker.pkg.dev/vf-grp-aib-dev-dna-sbx-alpha/gcf-artifacts/sac-commenting-server:$V' --",
     "deploy": "sh -c 'V=${1:-v1}; cd server && docker build -t sac-commenting:$V . && docker tag sac-commenting:$V gcr.io/vf-grp-gbissdbx-dev-1/sac-commenting:$V && docker push gcr.io/vf-grp-gbissdbx-dev-1/sac-commenting:$V' --",
-    "deploy:prod": "sh -c 'V=${1:-v1}; npm run build && cd server && docker build -t sac-commenting:$V . && docker tag sac-commenting:$V europe-west3-docker.pkg.dev/vf-grp-mirep-dev-beta/misc/sac-commenting:$V && docker push europe-west3-docker.pkg.dev/vf-grp-mirep-dev-beta/misc/sac-commenting:$V' --"
+    "deploy:prod": "sh -c 'V=${1:-v1}; ./scripts/docker-login-prod.sh && npm run build && cd server && docker build -t sac-commenting:$V . && docker tag sac-commenting:$V europe-west3-docker.pkg.dev/vf-grp-mirep-dev-beta/misc/sac-commenting:$V && docker --config ../.docker-prod push europe-west3-docker.pkg.dev/vf-grp-mirep-dev-beta/misc/sac-commenting:$V' --"
   },
   "dependencies": {
     "concurrently": "^9.2.1"
