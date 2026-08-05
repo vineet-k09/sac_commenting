@@ -874,10 +874,10 @@
   gap: 4px;
   margin: 4px 0 6px;
   padding: 3px 6px;
-  background: rgba(220, 38, 38, 0.04);
-  border-left: 2px solid rgba(220, 38, 38, 0.35);
+  background: rgba(30, 86, 200, 0.1);
+  border-left: 2px solid rgba(30, 86, 200, 0.2);
   border-radius: 0 4px 4px 0;
-  color: var(--c-red);
+  color: var(--c-blue);
   min-height: 0;
 }
 
@@ -893,12 +893,12 @@
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  background: rgba(220, 38, 38, 0.08);
-  border: 1px solid rgba(220, 38, 38, 0.18);
+  background: rgba(30, 86, 200, 0.1);
+  border: 1px solid rgba(30, 86, 200, 0.2);
   border-radius: 10px;
   padding: 1px 6px;
   font-size: 10px;
-  color: var(--c-red);
+  color: var(--c-blue);
   font-weight: 500;
   white-space: nowrap;
 }

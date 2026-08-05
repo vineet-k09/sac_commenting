@@ -134,7 +134,8 @@ export default function CommentPage() {
           </div>
 
           {/* Collapsible filter bar */}
-          {level === 'page' && filterCount > 0 && (
+          {/* {level === 'page' && filterCount > 0 && ( */}
+          {filterCount > 0 && (
             <>
               <div className="cp-filter-bar">
                 <div className="cp-filter-bar-summary"><IcoFilter /><span className="cp-filter-bar-label">{filterCount} filter{filterCount !== 1 ? 's' : ''} active</span></div>
@@ -154,6 +155,27 @@ export default function CommentPage() {
               )}
             </>
           )}
+
+          {/* {level === 'row' && filterCount > 0 && (
+            <>
+              <div className="cp-filter-bar">
+                <div className="cp-filter-bar-summary"><IcoFilter /><span className="cp-filter-bar-label">{filterCount} filter{filterCount !== 1 ? 's' : ''} active</span></div>
+                <button className="cp-filter-toggle-btn" onClick={() => setFiltersExpanded(v => !v)} aria-expanded={filtersExpanded}>
+                  {filtersExpanded ? 'Hide' : 'Show'} <IcoChevron open={filtersExpanded} />
+                </button>
+              </div>
+              {filtersExpanded && (
+                <div className="cp-filter-chip-list">
+                  {Object.entries(filters).map(([k, v]) => (
+                    <span key={k} className="cp-breadcrumb-chip">
+                      <span className="cp-breadcrumb-key">{k}:</span>
+                      <span className="cp-breadcrumb-val">{v}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
+          )} */}
 
           {/* Comment list */}
           <div className="cp-comments-list">
@@ -205,7 +227,8 @@ export default function CommentPage() {
                               {c.is_private && (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user)) && (
                                 <button className="cp-publish-btn" onClick={() => handlePublishPrivate(c)} title="Publish for wider audience">Publish</button>
                               )}
-                              {c.level === 'row' && (
+                              {/* {c.level === 'row' && ( */}
+                              {parseCommentFilter(c.filter).length > 0 &&(
                                 <button className="cp-icon-btn" onClick={() => toggleRowFilter(c.id)} title={hiddenRowFilters.has(c.id) ? "Show context filters" : "Hide context filters"}>
                                   {hiddenRowFilters.has(c.id) ? <IcoEyeOff /> : <IcoEye />}
                                 </button>
@@ -241,9 +264,11 @@ export default function CommentPage() {
                           </div>
 
                           {/* Row-level: compact inline filter context */}
-                          {c.level === 'row' && !hiddenRowFilters.has(c.id) && parseCommentFilter(c.filter).length > 0 && (
+                          {/* {c.level === 'row' && !hiddenRowFilters.has(c.id) && parseCommentFilter(c.filter).length > 0 && ( */}
+                          {!hiddenRowFilters.has(c.id) && parseCommentFilter(c.filter).length > 0 && (
                             <div className="cp-row-ctx">
-                              <IcoRow />
+                              {/* <IcoRow /> */}
+                              {c.level === 'row' ? <IcoRow /> : <IcoPage />}
                               <div className="cp-row-filter-chips">
                                 {parseCommentFilter(c.filter).map(f => (
                                   <span key={f.key} className="cp-row-filter-chip">
