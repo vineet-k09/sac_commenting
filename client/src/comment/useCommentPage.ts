@@ -18,6 +18,7 @@ export function useCommentPage() {
 
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [isUserLoading, setIsUserLoading] = useState(true);
   const [showRoleModal, setShowRoleModal] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [lockedCommentIds] = useState<string[]>(() => {
@@ -44,17 +45,29 @@ export function useCommentPage() {
 
 
   useEffect(() => {
-    fetchCurrentUserEmail().then(({ email, role }) => {
-      setUserEmail(email);
-      const defaultName = email.split('@')[0];
-      if (!user) setUser(formatDisplayName(defaultName));
-      if (role) {
-        setUserRole(role);
-      } else {
-        // Fallback or request role
-        setUserRole('Contributor'); 
-      }
-    });
+    setIsUserLoading(true);
+    fetchCurrentUserEmail()
+      .then(({ email, role }) => {
+        if (email) {
+          setUserEmail(email);
+          const defaultName = email.split('@')[0];
+          setUser(formatDisplayName(defaultName));
+        }
+        if (role) {
+          setUserRole(role);
+        } else {
+          setUserRole('Contributor'); 
+        }
+      })
+      .catch(() => {
+        const fallbackEmail = 'guest.user@datalinksoftware.com';
+        setUserEmail(fallbackEmail);
+        setUser(formatDisplayName('guest.user'));
+        setUserRole('Contributor');
+      })
+      .finally(() => {
+        setIsUserLoading(false);
+      });
   }, []);
 
   const handleSelectRole = async (role: UserRole) => {
@@ -93,7 +106,7 @@ export function useCommentPage() {
 
   /* ── SAC postMessage listener ────────────────────────────── */
   const handleTestFilter = () => {
-    const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|UserID:u123?UserName:John Doe?Story:s1?Page: LandingPage";
+    const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|Story:s1?Page: LandingPage";
 
     const newFilters: Record<string, string> = {};
     mockSACMessage.split(/[?|]+/).filter(Boolean).forEach(seg => {
@@ -102,14 +115,7 @@ export function useCommentPage() {
       const k = seg.substring(0, i).trim();
       const v = seg.substring(i + 1).trim();
       const kLower = k.toLowerCase();
-      if (kLower === 'username' || kLower === 'userid') {
-        if (kLower === 'username') {
-          setUser(formatDisplayName(v));
-          if (v.toLowerCase().includes('john')) {
-            setUserRole('Admin');
-          }
-        }
-      } else if (kLower === 'page') {
+      if (kLower === 'page') {
         if (v) {
           newFilters['Dashboard'] = v;
           setDashboard(v);
@@ -141,14 +147,7 @@ export function useCommentPage() {
         const k = seg.substring(0, i).trim();
         const v = seg.substring(i + 1).trim();
         const kLower = k.toLowerCase();
-        if (kLower === 'username' || kLower === 'userid') {
-          if (kLower === 'username') {
-            setUser(formatDisplayName(v));
-            if (v.toLowerCase().includes('john')) {
-              setUserRole('Admin');
-            }
-          }
-        } else if (kLower === 'page') {
+        if (kLower === 'page') {
           // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
           if (v) {
             newFilters['Dashboard'] = v;
@@ -195,7 +194,7 @@ export function useCommentPage() {
   const isValidSACSelection = Object.keys(filters).filter(k => k !== 'Dashboard').length > 0;
   const isCommentVisible = (c: Comment) => {
     if (!c.is_private) return true;
-    return formatDisplayName(c.user) === formatDisplayName(user);
+    return formatDisplayName(c.user) === formatDisplayName(user || userEmail);
   };
   const filteredComments = comments.filter(isCommentVisible);
   const visibleComments = filteredComments.filter(c => c.level === level);
@@ -203,19 +202,26 @@ export function useCommentPage() {
 
   /* ── Comment handlers ────────────────────────────────────── */
   const handleSave = async () => {
+    if (isUserLoading || !userEmail) {
+      addToast('err', 'Waiting for user email from backend...');
+      return;
+    }
     if (!editorHtml.trim() || stripHtml(editorHtml).length < 2) {
       addToast('err', 'Comment cannot be empty.');
       return;
     }
+
+    const existingComment = editingId ? comments.find(c => c.id === editingId) : null;
+
     const payload: Comment = {
       id: editingId ?? uid(),
-      user: user || 'Anonymous',
+      user: existingComment ? existingComment.user : (user || userEmail),
       content: editorHtml,
       level,
       filter: filterStr,
       wb_keys: wb_keysStr,
       dashboard: dashboard,
-      created_at: { value: new Date().toISOString() },
+      created_at: existingComment?.created_at ?? { value: new Date().toISOString() },
       is_private: isPrivate,
     };
     try {
@@ -345,7 +351,7 @@ export function useCommentPage() {
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, aiLoading,
     visibleComments, newCommentCount,
-    userEmail, userRole, showRoleModal, setShowRoleModal, handleSelectRole,
+    userEmail, userRole, isUserLoading, showRoleModal, setShowRoleModal, handleSelectRole,
     isPrivate, setIsPrivate, handlePublishPrivate, isValidSACSelection,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,

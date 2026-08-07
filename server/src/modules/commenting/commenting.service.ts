@@ -8,8 +8,10 @@ export async function handleCreateComment(data: Comment, username?: string){
     const is_private = data.is_private ?? false;
     const is_locked = data.is_locked ?? false;
     
-    // Server is source of truth for identity: ignore data.user if frontend sends it
-    const finalUser = username || 'Anonymous';
+    // Server is source of truth for identity, fallback to data.user or Anonymous
+    const finalUser = username || data.user || 'Anonymous';
+
+    console.log(`[Create Comment] User: ${finalUser}, Level: ${level}, Dashboard: ${dashboard || 'none'}`);
 
     const res = await createComment(finalUser, content, level, filter, dashboard, wb_keys, is_private, is_locked);
     return res;
@@ -21,6 +23,7 @@ export async function handleGetComments(filter?: string){
 }
 
 export async function handleDeleteComment(id: string){
+    console.log(`[Delete Comment] ID: ${id}`);
     const res = await deleteComment(id);
     return res;
 }
@@ -33,9 +36,11 @@ export async function handlePutComment(id: string, data: Comment, username?: str
     const is_locked = data.is_locked ?? false;
     
     // Server is source of truth for identity
-    const finalUser = username || 'Anonymous';
+    const modifierUser = username || data.user || 'Anonymous';
 
-    const res = await putComment(id, finalUser, content, level, filter, username || finalUser, is_private, is_locked);
+    console.log(`[Update Comment] ID: ${id}, ModifiedBy: ${modifierUser}`);
+
+    const res = await putComment(id, data.user || modifierUser, content, level, filter, modifierUser, is_private, is_locked);
     return res;
 }
 

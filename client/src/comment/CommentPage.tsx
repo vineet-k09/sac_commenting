@@ -53,7 +53,7 @@ export default function CommentPage() {
     filters, isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, visibleComments, newCommentCount,
-    userEmail, userRole,
+    userEmail, userRole, isUserLoading,
     isPrivate, setIsPrivate, handlePublishPrivate, isValidSACSelection,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
@@ -88,7 +88,7 @@ export default function CommentPage() {
             <IcoChat /><h1 className="cp-title">SAC Comments</h1>
           </div>
           <div className="cp-header-role">
-            <span className="cp-user-email">{userEmail || 'Guest'}</span>
+            <span className="cp-user-email">{isUserLoading ? 'Loading user...' : (userEmail || 'No User Email')}</span>
             <span className="cp-role-badge-static">
               {userRole ? `Role: ${userRole}` : 'Checking Role...'}
             </span>
@@ -310,7 +310,7 @@ export default function CommentPage() {
             <>
               <div className="cp-field">
                 <label className="cp-label">Posting as</label>
-                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{user || 'Waiting for SAC context…'}</span></div>
+                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{isUserLoading ? 'Loading user email from backend...' : (user || userEmail || 'Waiting for user email...')}</span></div>
               </div>
               <div className="cp-field">
                 <label className="cp-label">Comment Level</label>
