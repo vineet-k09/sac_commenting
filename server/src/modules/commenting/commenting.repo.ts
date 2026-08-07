@@ -120,25 +120,17 @@ export async function putComment(id: string, user: string, content: string, leve
     const author = oldComment?.user || user;
 
     if (oldComment) {
-        const hasContentChanged = oldComment.content !== content;
-        const hasPrivacyChanged = Boolean(oldComment.is_private) !== Boolean(is_private);
-        const hasLockChanged = Boolean(oldComment.is_locked) !== Boolean(is_locked);
-        const hasLevelChanged = oldComment.level !== level;
-        const hasFilterChanged = oldComment.filter !== filter;
-
-        if (hasContentChanged || hasPrivacyChanged || hasLockChanged || hasLevelChanged || hasFilterChanged) {
-            const historyRes = await createCommentHistory(
-                id,
-                oldComment.user || author,
-                oldComment.content ?? '',
-                content ?? '',
-                username
-            );
-            if (!historyRes.success) {
-                console.error("Failed to log comment edit history to BigQuery:", historyRes.error);
-            } else {
-                console.log(`[BigQuery History Logged] Comment ID: ${id}, Owner: ${oldComment.user || author}, ChangedBy: ${username}`);
-            }
+        const historyRes = await createCommentHistory(
+            id,
+            oldComment.user || author,
+            oldComment.content ?? '',
+            content ?? '',
+            username
+        );
+        if (!historyRes.success) {
+            console.error("Failed to log comment edit history to BigQuery:", historyRes.error);
+        } else {
+            console.log(`[BigQuery History Logged] Comment ID: ${id}, Owner: ${oldComment.user || author}, ChangedBy: ${username}`);
         }
     }
 
