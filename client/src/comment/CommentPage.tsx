@@ -47,13 +47,7 @@ function parseCommentFilter(filterStr: string): { key: string; val: string }[] {
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function CommentPage() {
-  const {
-    activeTab, setActiveTab, level, setLevel, user,
-    editorHtml, setEditorHtml, editorKey, editingId,
-    filters, isLoading, lastOpened, toasts, removeToast,
-    drawerOpen, setDrawerOpen, summaryText, sumLoading,
-    aiMode, aiHtml, visibleComments, newCommentCount,
-    userEmail, userRole, showRoleModal, setShowRoleModal, handleSelectRole,
+    userEmail, userRole,
     isPrivate, setIsPrivate, handlePublishPrivate,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
@@ -89,14 +83,9 @@ export default function CommentPage() {
           </div>
           <div className="cp-header-role">
             <span className="cp-user-email">{userEmail || 'Guest'}</span>
-            <button 
-              className="cp-role-badge-static" 
-              onClick={() => setShowRoleModal(true)}
-              title="Click to switch role"
-              style={{ cursor: 'pointer', border: '1px solid rgba(255,255,255,0.2)' }}
-            >
-              {userRole ? `Role: ${userRole} ▾` : 'Role: Admin ▾'}
-            </button>
+            <span className="cp-role-badge-static">
+              {userRole ? `Role: ${userRole}` : 'Checking Role...'}
+            </span>
           </div>
         </div>
       </div>
@@ -444,49 +433,6 @@ export default function CommentPage() {
                 </>
               )}
             </div>
-          </div>
-        </>
-      )}
-
-      {/* Role Selection Modal */}
-      {showRoleModal && (
-        <>
-          <div className="cp-drawer-backdrop" onClick={() => setShowRoleModal(false)} />
-          <div className="cp-modal" style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: '#1e293b', padding: '24px', borderRadius: '12px', zIndex: 1000, minWidth: '320px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)', border: '1px solid #334155' }}>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', color: '#f8fafc' }}>Switch User Role</h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#94a3b8' }}>Select role for <strong>{userEmail || 'Current User'}</strong>. Changes are saved to backend BigQuery.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(['Admin', 'Editor', 'Contributor', 'Viewer'] as const).map(role => (
-                <button
-                  key={role}
-                  className={`cp-btn-primary`}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: userRole === role ? '#0284c7' : '#334155',
-                    color: '#fff',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    textAlign: 'left',
-                  }}
-                  onClick={() => handleSelectRole(role)}
-                >
-                  <span>{role}</span>
-                  {userRole === role && <span style={{ fontSize: '12px', background: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '4px' }}>Active</span>}
-                </button>
-              ))}
-            </div>
-            <button 
-              className="cp-btn-ghost" 
-              style={{ marginTop: '16px', width: '100%', padding: '8px', borderRadius: '8px', border: '1px solid #475569', color: '#cbd5e1', cursor: 'pointer' }}
-              onClick={() => setShowRoleModal(false)}
-            >
-              Cancel
-            </button>
           </div>
         </>
       )}

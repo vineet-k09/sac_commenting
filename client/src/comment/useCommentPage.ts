@@ -18,7 +18,6 @@ export function useCommentPage() {
 
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState<UserRole | null>(null);
-  const [showRoleModal, setShowRoleModal] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const [lockedCommentIds] = useState<string[]>(() => {
     try {
@@ -54,28 +53,16 @@ export function useCommentPage() {
         if (role) {
           setUserRole(role);
         } else {
-          setUserRole('Admin'); 
+          setUserRole('Viewer'); 
         }
       })
       .catch(() => {
         const fallbackEmail = 'guest.user@datalinksoftware.com';
         setUserEmail(fallbackEmail);
         setUser(formatDisplayName('guest.user'));
-        setUserRole('Admin');
+        setUserRole('Viewer');
       });
   }, []);
-
-  const handleSelectRole = async (role: UserRole) => {
-    const targetEmail = userEmail || 'guest.user@datalinksoftware.com';
-    try {
-      await saveUserRole(targetEmail, role);
-    } catch (err) {
-      console.warn("Failed to save role to DB:", err);
-    }
-    setUserRole(role);
-    setShowRoleModal(false);
-    addToast('ok', `Logged in with role: ${role}`);
-  };
 
   const [lastOpened] = useState<Date>(() => {
     const stored = localStorage.getItem('sac-last-opened');
@@ -393,7 +380,7 @@ export function useCommentPage() {
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, aiLoading,
     visibleComments, newCommentCount,
-    userEmail, userRole, showRoleModal, setShowRoleModal, handleSelectRole,
+    userEmail, userRole,
     isPrivate, setIsPrivate, handlePublishPrivate, isValidSACSelection,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
