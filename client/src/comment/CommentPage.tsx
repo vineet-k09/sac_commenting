@@ -47,13 +47,19 @@ function parseCommentFilter(filterStr: string): { key: string; val: string }[] {
 
 /* ─── Component ──────────────────────────────────────────── */
 export default function CommentPage() {
+  const {
+    activeTab, setActiveTab, level, setLevel, user,
+    editorHtml, setEditorHtml, editorKey, editingId,
+    filters, isLoading, lastOpened, toasts, removeToast,
+    drawerOpen, setDrawerOpen, summaryText, sumLoading,
+    aiMode, aiHtml, visibleComments, newCommentCount,
     userEmail, userRole,
     isPrivate, setIsPrivate, handlePublishPrivate,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
     handleSaveAdminConfig,
-    handleSave, handleEdit, resetPost, handleDelete, /*openSummary,
-    handleAiRewrite,*/ acceptAllAi,
+    handleSave, handleEdit, resetPost, handleDelete,
+    acceptAllAi,
     handleTestFilter, handleClearRowFilters,
     lockedCommentIds, toggleLockComment,
   } = useCommentPage();
