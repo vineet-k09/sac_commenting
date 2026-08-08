@@ -54,20 +54,23 @@ export function useCommentPage() {
         if (role) {
           setUserRole(role);
         } else {
-          setUserRole('Contributor'); 
+          setUserRole('Admin'); 
         }
       })
       .catch(() => {
         const fallbackEmail = 'guest.user@datalinksoftware.com';
         setUserEmail(fallbackEmail);
         setUser(formatDisplayName('guest.user'));
-        setUserRole('Contributor');
+        setUserRole('Admin');
       });
   }, []);
 
   const handleSelectRole = async (role: UserRole) => {
-    if (userEmail) {
-      await saveUserRole(userEmail, role);
+    const targetEmail = userEmail || 'guest.user@datalinksoftware.com';
+    try {
+      await saveUserRole(targetEmail, role);
+    } catch (err) {
+      console.warn("Failed to save role to DB:", err);
     }
     setUserRole(role);
     setShowRoleModal(false);
@@ -100,7 +103,7 @@ export function useCommentPage() {
 
   /* ── SAC postMessage listener ────────────────────────────── */
   const handleTestFilter = () => {
-    const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|Story:s1?Page: LandingPage";
+    const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|Story:s1?UserName:John Doe?Role:Admin?Page: LandingPage";
 
     const newFilters: Record<string, string> = {};
     mockSACMessage.split(/[?|]+/).filter(Boolean).forEach(seg => {
@@ -109,7 +112,22 @@ export function useCommentPage() {
       const k = seg.substring(0, i).trim();
       const v = seg.substring(i + 1).trim();
       const kLower = k.toLowerCase();
-      if (kLower === 'page') {
+      if (kLower === 'username' || kLower === 'userid' || kLower === 'useremail' || kLower === 'email') {
+        if (v) {
+          setUser(formatDisplayName(v));
+          if (v.includes('@')) {
+            setUserEmail(v);
+            fetchUserRole(v).then(r => {
+              if (r) setUserRole(r);
+            });
+          }
+        }
+      } else if (kLower === 'role' || kLower === 'userrole') {
+        if (v) {
+          const formattedRole = (v.charAt(0).toUpperCase() + v.slice(1).toLowerCase()) as UserRole;
+          setUserRole(formattedRole);
+        }
+      } else if (kLower === 'page') {
         if (v) {
           newFilters['Dashboard'] = v;
           setDashboard(v);
@@ -127,7 +145,7 @@ export function useCommentPage() {
   // Real SAC message format:
   // "Entity:X?Year:Y?Month:Z?Custom1:W|UserID:uid?UserName:uname?Story:sid?Page: PageName"
   // Segments are delimited by `?` or `|`; user/meta fields are excluded from filter chips.
-  const META_KEYS = new Set(['userid', 'username', 'story', 'storyid']);
+  const META_KEYS = new Set(['userid', 'username', 'useremail', 'email', 'role', 'userrole', 'story', 'storyid']);
 
   useEffect(() => {
     const handler = (e: MessageEvent) => {
@@ -141,7 +159,22 @@ export function useCommentPage() {
         const k = seg.substring(0, i).trim();
         const v = seg.substring(i + 1).trim();
         const kLower = k.toLowerCase();
-        if (kLower === 'page') {
+        if (kLower === 'username' || kLower === 'userid' || kLower === 'useremail' || kLower === 'email') {
+          if (v) {
+            setUser(formatDisplayName(v));
+            if (v.includes('@')) {
+              setUserEmail(v);
+              fetchUserRole(v).then(r => {
+                if (r) setUserRole(r);
+              });
+            }
+          }
+        } else if (kLower === 'role' || kLower === 'userrole') {
+          if (v) {
+            const formattedRole = (v.charAt(0).toUpperCase() + v.slice(1).toLowerCase()) as UserRole;
+            setUserRole(formattedRole);
+          }
+        } else if (kLower === 'page') {
           // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
           if (v) {
             newFilters['Dashboard'] = v;

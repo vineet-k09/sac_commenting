@@ -3,15 +3,14 @@ import { getUserRole as getRole, saveUserRole as setRole } from "./auth.repo";
 
 export async function getUser(req: Request, res: Response) {
     try {
-        // req.body.username is set by gcpAuthMiddleware from 'x-goog-authenticated-user-email'
-        const email = req.body?.username || 'guest.user@datalinksoftware.com';
-        const role = await getRole(email);
+        const email = req.body?.username || req.body?.email || (req.headers['x-goog-authenticated-user-email'] as string) || 'guest.user@datalinksoftware.com';
+        const role = (await getRole(email)) || 'Admin';
         
         const result = {
             email,
             role,
             success: true
-        }
+        };
         res.status(200).json(result);
     } catch (error: any) {
         console.error("Error getting user:", error);
