@@ -61,6 +61,7 @@ export default function CommentPage() {
     handleSave, handleEdit, resetPost, handleDelete, /*openSummary,
     handleAiRewrite,*/ acceptAllAi,
     handleTestFilter, handleClearRowFilters,
+    storyId,
     lockedCommentIds, toggleLockComment,
   } = useCommentPage();
 
@@ -86,6 +87,11 @@ export default function CommentPage() {
         <div className="cp-header-inner">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <IcoChat /><h1 className="cp-title">SAC Comments</h1>
+            {storyId && (
+              <span className="cp-story-badge" style={{ fontSize: '11px', background: 'rgba(255, 255, 255, 0.15)', color: '#ffffff', padding: '2px 8px', borderRadius: '12px', marginLeft: '4px', fontWeight: 600 }}>
+                Story: {storyId}
+              </span>
+            )}
           </div>
           <div className="cp-header-role">
             <span className="cp-user-email">{isUserLoading ? 'Loading user...' : (userEmail || 'No User Email')}</span>
@@ -179,14 +185,7 @@ export default function CommentPage() {
 
           {/* Comment list */}
           <div className="cp-comments-list">
-            {!isValidSACSelection ? (
-              <div className="cp-invalid-selection-box">
-                <div className="cp-invalid-icon"><IcoFilter /></div>
-                <h3>SAC Context Required</h3>
-                <p>Ensure comments are visible only after post completion and valid SAC selections (at least one dimension filter present in context).</p>
-                <button className="cp-btn-primary" onClick={handleTestFilter}>Apply Test SAC Context</button>
-              </div>
-            ) : isLoading ? (
+            {isLoading ? (
               [0, 1, 2].map(i => <SkeletonCard key={i} index={i} />)
             ) : visibleComments.length === 0 ? (
               <div className="cp-empty">
@@ -294,14 +293,7 @@ export default function CommentPage() {
       {/* ══ POST TAB ══ */}
       {activeTab === 'post' && (
         <div className="cp-panel">
-          {!isValidSACSelection ? (
-            <div className="cp-invalid-selection-box">
-              <div className="cp-invalid-icon"><IcoFilter /></div>
-              <h3>SAC Context Required</h3>
-              <p>Please make valid SAC selections (at least one dimension filter) before posting a comment.</p>
-              <button className="cp-btn-primary" onClick={handleTestFilter}>Apply Test SAC Context</button>
-            </div>
-          ) : userRole === 'Viewer' ? (
+          {userRole === 'Viewer' ? (
             <div className="cp-invalid-selection-box">
               <h3>Access Denied</h3>
               <p>Your current role (Viewer) does not permit posting or editing comments.</p>

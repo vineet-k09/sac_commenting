@@ -102,6 +102,14 @@ export function useCommentPage() {
   const [aiHtml, setAiHtml] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [dashboard, setDashboard] = useState('common');
+  const [storyId, setStoryId] = useState<string>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('story') || urlParams.get('storyId') || urlParams.get('story_id') || 's1';
+    } catch {
+      return 's1';
+    }
+  });
 
 
   /* ── SAC postMessage listener ────────────────────────────── */
@@ -115,7 +123,9 @@ export function useCommentPage() {
       const k = seg.substring(0, i).trim();
       const v = seg.substring(i + 1).trim();
       const kLower = k.toLowerCase();
-      if (kLower === 'page') {
+      if (kLower === 'story' || kLower === 'storyid') {
+        if (v) setStoryId(v);
+      } else if (kLower === 'page') {
         if (v) {
           newFilters['Dashboard'] = v;
           setDashboard(v);
@@ -147,7 +157,9 @@ export function useCommentPage() {
         const k = seg.substring(0, i).trim();
         const v = seg.substring(i + 1).trim();
         const kLower = k.toLowerCase();
-        if (kLower === 'page') {
+        if (kLower === 'story' || kLower === 'storyid') {
+          if (v) setStoryId(v);
+        } else if (kLower === 'page') {
           // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
           if (v) {
             newFilters['Dashboard'] = v;
@@ -167,7 +179,7 @@ export function useCommentPage() {
 
   /* ── Fetch on context change ─────────────────────────────── */
   useEffect(() => {
-    const fs = buildFilterStr(filters) ?? 'DefaultContext';
+    const fs = buildFilterStr(filters);
     const isOnlyDashboard = Object.keys(filters).length === 1 && !!filters['Dashboard'];
 
     setIsLoading(true);
@@ -178,20 +190,39 @@ export function useCommentPage() {
       fetchComments('')
         .then(data => {
           const dashboardVal = filters['Dashboard'];
-          setComments(data.filter(c => c.dashboard === dashboardVal));
+          setComments(data.filter(c => !dashboardVal || c.dashboard === dashboardVal));
         })
-        .finally(() => setTimeout(() => setIsLoading(false), 600));
-    } else {
+        .catch(err => {
+          console.error("Failed to fetch comments for dashboard:", err);
+        })
+        .finally(() => setTimeout(() => setIsLoading(false), 300));
+    } else if (fs) {
       fetchComments(fs)
-        .then(setComments)
-        .finally(() => setTimeout(() => setIsLoading(false), 600));
+        .then(data => {
+          setComments(data);
+        })
+        .catch(err => {
+          console.error("Failed to fetch filtered comments:", err);
+        })
+        .finally(() => setTimeout(() => setIsLoading(false), 300));
+    } else {
+      // Direct load on page open (npm run dev):
+      // Fetch and showcase all comments directly for the current story/context
+      fetchComments('')
+        .then(data => {
+          setComments(data);
+        })
+        .catch(err => {
+          console.error("Failed to fetch comments on initial load:", err);
+        })
+        .finally(() => setTimeout(() => setIsLoading(false), 300));
     }
-  }, [filters]);
+  }, [filters, dashboard, storyId]);
 
   /* ── Computed ─────────────────────────────────────────────── */
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
   const wb_keysStr = buildFilterValuesStr(filters) ?? 'DefaultContext';
-  const isValidSACSelection = Object.keys(filters).filter(k => k !== 'Dashboard').length > 0;
+  const isValidSACSelection = true;
   const isCommentVisible = (c: Comment) => {
     if (!c.is_private) return true;
     return formatDisplayName(c.user) === formatDisplayName(user || userEmail);
@@ -220,7 +251,8 @@ export function useCommentPage() {
       level,
       filter: filterStr,
       wb_keys: wb_keysStr,
-      dashboard: dashboard,
+      dashboard: dashboard || 'LandingPage',
+      story: storyId || 's1',
       created_at: existingComment?.created_at ?? { value: new Date().toISOString() },
       is_private: isPrivate,
     };
@@ -359,6 +391,7 @@ export function useCommentPage() {
     handleSave, handleEdit, handleDelete, resetPost,
     openSummary, handleAiRewrite, acceptAllAi, addToast,
     handleTestFilter, handleClearRowFilters,
+    storyId, setStoryId,
     lockedCommentIds, toggleLockComment,
   };
 }
