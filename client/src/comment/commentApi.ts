@@ -4,7 +4,8 @@ const API_BASE = '/api';
 const CACHE_KEY = (filter: string) => `c_${filter}`;
 
 export async function fetchComments(filterStr: string): Promise<Comment[]> {
-  const params = new URLSearchParams({ filter: filterStr });
+  const params = new URLSearchParams();
+  if (filterStr) params.append('filter', filterStr);
   try {
     const res = await fetch(`${API_BASE}/comment?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -87,13 +88,13 @@ export async function fetchCurrentUserEmail(): Promise<{ email: string; role?: U
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     return { 
-      email: data.email, 
+      email: data.email || '', 
       role: data.role as UserRole, 
-      success: true 
+      success: !!data.email 
     };
   } catch (err) {
     console.error("Failed to fetch user:", err);
-    return { email: 'guest.user@datalinksoftware.com', role: 'Viewer', success: false };
+    return { email: '', role: null, success: false };
   }
 }
 

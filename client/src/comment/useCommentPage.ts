@@ -48,20 +48,14 @@ export function useCommentPage() {
       .then(({ email, role }) => {
         if (email) {
           setUserEmail(email);
-          const defaultName = email.split('@')[0];
-          setUser(formatDisplayName(defaultName));
+          setUser(prev => prev || email);
         }
         if (role) {
           setUserRole(role);
-        } else {
-          setUserRole('Viewer');
         }
       })
       .catch(() => {
-        const fallbackEmail = 'guest.user@datalinksoftware.com';
-        setUserEmail(fallbackEmail);
-        setUser(formatDisplayName('guest.user'));
-        setUserRole('Viewer');
+        // No authenticated GCP session; identity will be populated dynamically from SAC postMessage
       });
   }, []);
 
@@ -87,10 +81,10 @@ export function useCommentPage() {
 
   const [aiHtml, setAiHtml] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [dashboard, setDashboard] = useState<string>(() => {
+  const [page, setPage] = useState<string>(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('page') || urlParams.get('dashboard') || '';
+      return urlParams.get('page') || urlParams.get('Page') || urlParams.get('dashboard') || '';
     } catch {
       return '';
     }
@@ -119,8 +113,8 @@ export function useCommentPage() {
         if (v) setStoryId(v);
       } else if (kLower === 'page' || kLower === 'pagename' || kLower === 'dashboard') {
         if (v) {
-          newFilters['Dashboard'] = v;
-          setDashboard(v);
+          newFilters['Page'] = v;
+          setPage(v);
         }
       } else if (kLower === 'username') {
         if (v) setUser(formatDisplayName(v));
@@ -168,10 +162,9 @@ export function useCommentPage() {
         if (kLower === 'story' || kLower === 'storyid') {
           if (v) setStoryId(v);
         } else if (kLower === 'page' || kLower === 'pagename' || kLower === 'dashboard') {
-          // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
           if (v) {
-            newFilters['Dashboard'] = v;
-            setDashboard(v);
+            newFilters['Page'] = v;
+            setPage(v);
           }
         } else if (kLower === 'username') {
           if (v) setUser(formatDisplayName(v));
@@ -204,20 +197,23 @@ export function useCommentPage() {
   /* ── Fetch on context change ─────────────────────────────── */
   useEffect(() => {
     const fs = buildFilterStr(filters);
-    const isOnlyDashboard = Object.keys(filters).length === 1 && !!filters['Dashboard'];
+    const isOnlyPage = Object.keys(filters).length === 1 && (!!filters['Page'] || !!filters['Dashboard']);
 
     setIsLoading(true);
 
-    if (isOnlyDashboard) {
-      // If only Dashboard is active (e.g. after "Clear Rows"), fetch all comments 
-      // and filter locally to ensure we see all row-level comments for this dashboard.
+    if (isOnlyPage) {
+      // If only Page is active (e.g. after "Clear Rows"), fetch all comments 
+      // and filter locally to ensure we see all row-level comments for this page.
       fetchComments('')
         .then(data => {
-          const dashboardVal = filters['Dashboard'] || dashboard;
-          setComments(data.filter(c => !dashboardVal || !c.dashboard || c.dashboard === 'common' || c.dashboard.toLowerCase() === dashboardVal.toLowerCase()));
+          const pageVal = filters['Page'] || filters['Dashboard'] || page;
+          setComments(data.filter(c => {
+            const cPage = c.page || c.dashboard;
+            return !pageVal || !cPage || cPage === 'common' || cPage.toLowerCase() === pageVal.toLowerCase();
+          }));
         })
         .catch(err => {
-          console.error("Failed to fetch comments for dashboard:", err);
+          console.error("Failed to fetch comments for page:", err);
         })
         .finally(() => setTimeout(() => setIsLoading(false), 300));
     } else if (fs) {
@@ -241,7 +237,7 @@ export function useCommentPage() {
         })
         .finally(() => setTimeout(() => setIsLoading(false), 300));
     }
-  }, [filters, dashboard, storyId]);
+  }, [filters, page, storyId]);
 
   /* ── Computed ─────────────────────────────────────────────── */
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
@@ -269,11 +265,12 @@ export function useCommentPage() {
     if (storyId && c.story && c.story !== storyId) {
       return false;
     }
-    // 2. Page / Dashboard matching: if we have a dashboard and the comment has a dashboard property (not common), match it
-    if (dashboard && c.dashboard && c.dashboard !== 'common') {
-      const normalizedCommentDash = c.dashboard.toLowerCase().replace(/[\s_-]+/g, '');
-      const normalizedCurrentDash = dashboard.toLowerCase().replace(/[\s_-]+/g, '');
-      if (normalizedCommentDash !== normalizedCurrentDash) {
+    // 2. Page matching: if we have an active page and the comment specifies a page, match it
+    const commentPage = c.page || c.dashboard;
+    if (page && commentPage && commentPage !== 'common') {
+      const normalizedCommentPage = commentPage.toLowerCase().replace(/[\s_-]+/g, '');
+      const normalizedCurrentPage = page.toLowerCase().replace(/[\s_-]+/g, '');
+      if (normalizedCommentPage !== normalizedCurrentPage) {
         return false;
       }
     }
@@ -305,7 +302,8 @@ export function useCommentPage() {
       level,
       filter: filterStr,
       wb_keys: wb_keysStr,
-      dashboard: dashboard || 'common',
+      page: page || '',
+      dashboard: page || '',
       story: storyId || '',
       created_at: existingComment?.created_at ?? { value: new Date().toISOString() },
       is_private: isPrivate,
@@ -373,6 +371,7 @@ export function useCommentPage() {
   const handleClearRowFilters = () => {
     setFilters(prev => {
       const next: Record<string, string> = {};
+      if (prev['Page']) next['Page'] = prev['Page'];
       if (prev['Dashboard']) next['Dashboard'] = prev['Dashboard'];
       return next;
     });
@@ -445,7 +444,7 @@ export function useCommentPage() {
     handleSave, handleEdit, handleDelete, resetPost,
     openSummary, handleAiRewrite, acceptAllAi, addToast,
     handleTestFilter, handleClearRowFilters,
-    storyId, setStoryId, dashboard, setDashboard,
+    storyId, setStoryId, page, setPage, dashboard: page, setDashboard: setPage,
     lockedCommentIds, toggleLockComment,
   };
 }

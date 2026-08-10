@@ -26,7 +26,7 @@ export async function deleteComment(req: any, res: Response) {
     const id = req.params?.id;
     try {
         const result = await handleDeleteComment(id);
-        res.status(result.success ? 200 : 500).json({ message: "Comment deleted successfully." , result});
+        res.status(result.success ? 200 : 500).json({ message: "Comment deleted successfully.", result });
     } catch (error: any) {
         console.error("Error deleting comment:", error);
         res.status(500).json({ error: "Failed to delete comment" });
@@ -38,7 +38,7 @@ export async function putComment(req: any, res: Response) {
         const id = req.params?.id;
         const result = await handlePutComment(id, req.body, req.body?.username);
         res.status(result.success ? 200 : 500).json(result);
-    } catch(   error: any) {
+    } catch (error: any) {
         console.error("Error updating comment:", error);
         res.status(500).json({ error: "Failed to update comment" });
     }

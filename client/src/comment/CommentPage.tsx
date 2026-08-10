@@ -88,7 +88,7 @@ export default function CommentPage() {
             <IcoChat /><h1 className="cp-title">SAC Comments</h1>
           </div>
           <div className="cp-header-role">
-            <span className="cp-user-email">{user || userEmail || (userId ? `ID: ${userId}` : 'Guest')}</span>
+            <span className="cp-user-email">{userEmail || user || (userId ? `ID: ${userId}` : 'No User Email')}</span>
             <span className="cp-role-badge-static">
               {userRole ? `Role: ${userRole}` : 'Checking Role...'}
             </span>
@@ -296,7 +296,7 @@ export default function CommentPage() {
             <>
               <div className="cp-field">
                 <label className="cp-label">Posting as</label>
-                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{user || userEmail || 'Waiting for SAC context…'}</span></div>
+                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{userEmail || user || 'Waiting for SAC context…'}</span></div>
               </div>
               <div className="cp-field">
                 <label className="cp-label">Comment Level</label>

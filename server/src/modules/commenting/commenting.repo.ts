@@ -44,14 +44,14 @@ export async function createCommentHistory(
 
 export async function createComment(
     user: string,
-    content: string, 
-    level: CommentLevel, 
+    content: string,
+    level: CommentLevel,
     filter: string,
     dashboard: string,
     wb_keys: string,
     is_private: boolean = false,
     is_locked: boolean = false
-){
+) {
     const id = randomUUID();
 
     const query = `
@@ -98,7 +98,7 @@ export async function createComment(
 }
 
 // TODO: Implement dashboard name filter
-export async function getComments(filter?: string){
+export async function getComments(filter?: string) {
     let query = `SELECT * FROM ${getTable()}`;
     if (filter) {
         query += ` WHERE filter = @filter`;
@@ -108,14 +108,14 @@ export async function getComments(filter?: string){
     return results.data;
 }
 
-export async function deleteComment(id: string){
+export async function deleteComment(id: string) {
     const query = `DELETE FROM ${getTable()} WHERE id = @id`;
     const queryParams = { id };
     const res = await bq.query(query, queryParams);
     return res;
 }
 
-export async function putComment(id: string, user: string, content: string, level: CommentLevel, filter: string, username: string, is_private: boolean = false, is_locked: boolean = false){
+export async function putComment(id: string, user: string, content: string, level: CommentLevel, filter: string, username: string, is_private: boolean = false, is_locked: boolean = false) {
     const oldComment = await getCommentById(id);
     const author = oldComment?.user || user;
 
@@ -134,8 +134,8 @@ export async function putComment(id: string, user: string, content: string, leve
         }
     }
 
-    const query = 
-    `UPDATE ${getTable()} 
+    const query =
+        `UPDATE ${getTable()} 
     SET user = @author, 
     content = @content, 
     level = @level, 
