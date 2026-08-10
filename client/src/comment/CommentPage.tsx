@@ -296,7 +296,7 @@ export default function CommentPage() {
             <>
               <div className="cp-field">
                 <label className="cp-label">Posting as</label>
-                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{userEmail || user || 'Waiting for SAC context…'}</span></div>
+                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{user || (userEmail ? formatDisplayName(userEmail) : 'Waiting for SAC context…')}</span></div>
               </div>
               <div className="cp-field">
                 <label className="cp-label">Comment Level</label>

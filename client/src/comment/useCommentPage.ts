@@ -48,7 +48,7 @@ export function useCommentPage() {
       .then(({ email, role }) => {
         const resolvedEmail = email || 'guest.user@datalinksoftware.com';
         setUserEmail(resolvedEmail);
-        setUser(prev => prev || resolvedEmail);
+        setUser(prev => prev || formatDisplayName(resolvedEmail));
         if (role) {
           setUserRole(role);
         } else if (resolvedEmail === 'guest.user@datalinksoftware.com') {
@@ -59,7 +59,7 @@ export function useCommentPage() {
         console.error("Failed to fetch user role from backend:", err);
         const fallbackEmail = 'guest.user@datalinksoftware.com';
         setUserEmail(fallbackEmail);
-        setUser(prev => prev || fallbackEmail);
+        setUser(prev => prev || formatDisplayName(fallbackEmail));
         setUserRole('Admin');
       });
   }, []);
