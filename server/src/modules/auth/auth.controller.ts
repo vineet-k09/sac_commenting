@@ -5,7 +5,7 @@ export async function getUser(req: Request, res: Response) {
     try {
         const gcpHeader = req.headers['x-goog-authenticated-user-email'] as string;
         const email = req.body?.username || req.body?.email || (typeof req.query?.email === 'string' ? req.query.email : undefined) || (gcpHeader ? gcpHeader.split(':').pop() : undefined);
-        
+
         if (email) {
             const role = (await getRole(email)) || 'Viewer';
             return res.status(200).json({

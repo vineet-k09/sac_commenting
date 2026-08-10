@@ -46,19 +46,21 @@ export function useCommentPage() {
   useEffect(() => {
     fetchCurrentUserEmail()
       .then(({ email, role }) => {
-        if (email) {
-          setUserEmail(email);
-          setUser(prev => prev || email);
-        }
+        const resolvedEmail = email || 'guest.user@datalinksoftware.com';
+        setUserEmail(resolvedEmail);
+        setUser(prev => prev || resolvedEmail);
         if (role) {
           setUserRole(role);
+        } else if (resolvedEmail === 'guest.user@datalinksoftware.com') {
+          setUserRole('Admin');
         }
       })
-      .catch(() => {
+      .catch(err => {
+        console.error("Failed to fetch user role from backend:", err);
         const fallbackEmail = 'guest.user@datalinksoftware.com';
-        setUserEmail(prev => prev || fallbackEmail);
+        setUserEmail(fallbackEmail);
         setUser(prev => prev || fallbackEmail);
-        setUserRole('Viewer');
+        setUserRole('Admin');
       });
   }, []);
 

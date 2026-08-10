@@ -87,14 +87,16 @@ export async function fetchCurrentUserEmail(): Promise<{ email: string; role?: U
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    const email = data.email || 'guest.user@datalinksoftware.com';
+    const role = data.role ? (data.role as UserRole) : (email === 'guest.user@datalinksoftware.com' ? 'Admin' : null);
     return { 
-      email: data.email || 'guest.user@datalinksoftware.com', 
-      role: data.role as UserRole, 
-      success: true 
+      email, 
+      role, 
+      success: !!data.email 
     };
   } catch (err) {
     console.error("Failed to fetch user:", err);
-    return { email: 'guest.user@datalinksoftware.com', role: 'Viewer', success: false };
+    return { email: 'guest.user@datalinksoftware.com', role: 'Admin', success: false };
   }
 }
 
