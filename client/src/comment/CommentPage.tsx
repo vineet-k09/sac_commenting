@@ -53,7 +53,7 @@ export default function CommentPage() {
     filters, isLoading, lastOpened, toasts, removeToast,
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, visibleComments, newCommentCount,
-    userEmail, userRole,
+    userEmail, userRole, userId, isSameUser,
     isPrivate, setIsPrivate, handlePublishPrivate,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
@@ -88,7 +88,7 @@ export default function CommentPage() {
             <IcoChat /><h1 className="cp-title">SAC Comments</h1>
           </div>
           <div className="cp-header-role">
-            <span className="cp-user-email">{userEmail || 'Guest'}</span>
+            <span className="cp-user-email">{user || userEmail || (userId ? `ID: ${userId}` : 'Guest')}</span>
             <span className="cp-role-badge-static">
               {userRole ? `Role: ${userRole}` : 'Checking Role...'}
             </span>
@@ -217,11 +217,11 @@ export default function CommentPage() {
                               <span className="cp-ts" title={absolute}>{relative} · {absolute}</span>
                             </div>
                             <div className="cp-card-actions">
-                              {c.is_private && (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user)) && (
+                              {c.is_private && (userRole === 'Admin' || isSameUser(c.user)) && (
                                 <button className="cp-publish-btn" onClick={() => handlePublishPrivate(c)} title="Publish for wider audience">Publish</button>
                               )}
                               {/* {c.level === 'row' && ( */}
-                              {parseCommentFilter(c.filter).length > 0 &&(
+                              {parseCommentFilter(c.filter).length > 0 && (
                                 <button className="cp-icon-btn" onClick={() => toggleRowFilter(c.id)} title={hiddenRowFilters.has(c.id) ? "Show context filters" : "Hide context filters"}>
                                   {hiddenRowFilters.has(c.id) ? <IcoEyeOff /> : <IcoEye />}
                                 </button>
@@ -238,7 +238,7 @@ export default function CommentPage() {
                                   </button>
                                 </>
                               )}
-                              {userRole !== 'Viewer' && (
+                              {userRole !== 'Viewer' && (userRole === 'Admin' || isSameUser(c.user)) && (
                                 isLocked ? (
                                   userRole === 'Admin' && (
                                     <>
@@ -434,7 +434,7 @@ export default function CommentPage() {
                   <div className="cp-summary-text" dangerouslySetInnerHTML={{ __html: summaryText }} />
                   <div className="cp-summary-meta">
                     <strong>Contributors:</strong>{' '}
-                    {[...new Set(visibleComments.map(c => formatDisplayName(c.user)))].join(', ')}
+                    {[...new Set(visibleComments.map((c: Comment) => formatDisplayName(c.user)))].join(', ')}
                   </div>
                 </>
               )}

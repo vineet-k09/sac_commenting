@@ -1,6 +1,6 @@
 /* ─── Domain Types ───────────────────────────────────────── */
 export type CommentLevel = 'page' | 'row';
-export type ActiveTab    = 'comments' | 'post' | 'ai';
+export type ActiveTab = 'comments' | 'post' | 'ai';
 
 export interface Comment {
   id: string;
@@ -12,7 +12,7 @@ export interface Comment {
   wb_keys: string;
   is_private?: boolean;
   is_locked?: boolean;
-  timestamp: {value: string}; // ISO 8601
+  timestamp: { value: string }; // ISO 8601
 }
 
 // export interface Comment {

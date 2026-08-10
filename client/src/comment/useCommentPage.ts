@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ToastItem } from '../ui/ToastContainer';
 import type { Comment, CommentLevel, ActiveTab, UserRole } from '../types';
 import { uid, stripHtml, formatDisplayName } from './commentUtils';
-import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI, fetchCurrentUserEmail, saveUserRole } from './commentApi';
+import { fetchComments, saveComment, deleteComment, cacheComments, buildFilterStr, buildFilterValuesStr, summarizeCommentsAPI, rephraseCommentAPI, fetchCurrentUserEmail, fetchUserRole } from './commentApi';
 
 export function useCommentPage() {
   /* ── Core state ──────────────────────────────────────────── */
@@ -16,6 +16,7 @@ export function useCommentPage() {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
+  const [userId, setUserId] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -53,7 +54,7 @@ export function useCommentPage() {
         if (role) {
           setUserRole(role);
         } else {
-          setUserRole('Viewer'); 
+          setUserRole('Viewer');
         }
       })
       .catch(() => {
@@ -86,11 +87,26 @@ export function useCommentPage() {
 
   const [aiHtml, setAiHtml] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const [dashboard, setDashboard] = useState('common');
+  const [dashboard, setDashboard] = useState<string>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('page') || urlParams.get('dashboard') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [storyId, setStoryId] = useState<string>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('story') || urlParams.get('storyId') || urlParams.get('story_id') || '';
+    } catch {
+      return '';
+    }
+  });
 
   /* ── SAC postMessage listener ────────────────────────────── */
   const handleTestFilter = () => {
-    const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|Story:s1?UserName:John Doe?Role:Admin?Page: LandingPage";
+    const mockSACMessage = "Entity:APAC?Year:2025?Month:January?Custom1:Budget|StoryID:s1?UserName:John Doe?Role:Admin?Page: LandingPage";
 
     const newFilters: Record<string, string> = {};
     mockSACMessage.split(/[?|]+/).filter(Boolean).forEach(seg => {
@@ -99,25 +115,28 @@ export function useCommentPage() {
       const k = seg.substring(0, i).trim();
       const v = seg.substring(i + 1).trim();
       const kLower = k.toLowerCase();
-      if (kLower === 'username' || kLower === 'userid' || kLower === 'useremail' || kLower === 'email') {
+      if (kLower === 'story' || kLower === 'storyid') {
+        if (v) setStoryId(v);
+      } else if (kLower === 'page' || kLower === 'pagename' || kLower === 'dashboard') {
         if (v) {
-          setUser(formatDisplayName(v));
-          if (v.includes('@')) {
-            setUserEmail(v);
-            fetchUserRole(v).then(r => {
-              if (r) setUserRole(r);
-            });
-          }
+          newFilters['Dashboard'] = v;
+          setDashboard(v);
+        }
+      } else if (kLower === 'username') {
+        if (v) setUser(formatDisplayName(v));
+      } else if (kLower === 'userid') {
+        if (v && v.includes('@') && !userEmail) setUserEmail(v);
+      } else if (kLower === 'useremail' || kLower === 'email') {
+        if (v) {
+          setUserEmail(v);
+          fetchUserRole(v).then(r => {
+            if (r) setUserRole(r);
+          });
         }
       } else if (kLower === 'role' || kLower === 'userrole') {
         if (v) {
           const formattedRole = (v.charAt(0).toUpperCase() + v.slice(1).toLowerCase()) as UserRole;
           setUserRole(formattedRole);
-        }
-      } else if (kLower === 'page') {
-        if (v) {
-          newFilters['Dashboard'] = v;
-          setDashboard(v);
         }
       } else if (k && !META_KEYS.has(kLower)) {
         newFilters[k] = v;
@@ -130,7 +149,7 @@ export function useCommentPage() {
     addToast('info', 'Test SAC filters applied directly');
   };
   // Real SAC message format:
-  // "Entity:X?Year:Y?Month:Z?Custom1:W|UserID:uid?UserName:uname?Story:sid?Page: PageName"
+  // "Entity:X?Year:Y?Month:Z?Custom1:W|UserID:uid?UserName:uname?StoryID:sid?Page: PageName"
   // Segments are delimited by `?` or `|`; user/meta fields are excluded from filter chips.
   const META_KEYS = new Set(['userid', 'username', 'useremail', 'email', 'role', 'userrole', 'story', 'storyid']);
 
@@ -146,26 +165,29 @@ export function useCommentPage() {
         const k = seg.substring(0, i).trim();
         const v = seg.substring(i + 1).trim();
         const kLower = k.toLowerCase();
-        if (kLower === 'username' || kLower === 'userid' || kLower === 'useremail' || kLower === 'email') {
+        if (kLower === 'story' || kLower === 'storyid') {
+          if (v) setStoryId(v);
+        } else if (kLower === 'page' || kLower === 'pagename' || kLower === 'dashboard') {
+          // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
           if (v) {
-            setUser(formatDisplayName(v));
-            if (v.includes('@')) {
-              setUserEmail(v);
-              fetchUserRole(v).then(r => {
-                if (r) setUserRole(r);
-              });
-            }
+            newFilters['Dashboard'] = v;
+            setDashboard(v);
+          }
+        } else if (kLower === 'username') {
+          if (v) setUser(formatDisplayName(v));
+        } else if (kLower === 'userid') {
+          if (v && v.includes('@') && !userEmail) setUserEmail(v);
+        } else if (kLower === 'useremail' || kLower === 'email') {
+          if (v) {
+            setUserEmail(v);
+            fetchUserRole(v).then(r => {
+              if (r) setUserRole(r);
+            });
           }
         } else if (kLower === 'role' || kLower === 'userrole') {
           if (v) {
             const formattedRole = (v.charAt(0).toUpperCase() + v.slice(1).toLowerCase()) as UserRole;
             setUserRole(formattedRole);
-          }
-        } else if (kLower === 'page') {
-          // SAC's "Page" field carries the dashboard name — store it as "Dashboard"
-          if (v) {
-            newFilters['Dashboard'] = v;
-            setDashboard(v);
           }
         } else if (k && !META_KEYS.has(kLower)) {
           // Only add genuine dimension filters (Entity, Year, Month, Custom1, etc.)
@@ -177,7 +199,7 @@ export function useCommentPage() {
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, []);
+  }, [userEmail]);
 
   /* ── Fetch on context change ─────────────────────────────── */
   useEffect(() => {
@@ -191,8 +213,8 @@ export function useCommentPage() {
       // and filter locally to ensure we see all row-level comments for this dashboard.
       fetchComments('')
         .then(data => {
-          const dashboardVal = filters['Dashboard'];
-          setComments(data.filter(c => !dashboardVal || c.dashboard === dashboardVal));
+          const dashboardVal = filters['Dashboard'] || dashboard;
+          setComments(data.filter(c => !dashboardVal || !c.dashboard || c.dashboard === 'common' || c.dashboard.toLowerCase() === dashboardVal.toLowerCase()));
         })
         .catch(err => {
           console.error("Failed to fetch comments for dashboard:", err);
@@ -209,7 +231,7 @@ export function useCommentPage() {
         .finally(() => setTimeout(() => setIsLoading(false), 300));
     } else {
       // Direct load on page open (npm run dev):
-      // Fetch and showcase all comments directly for the current context
+      // Fetch and showcase comments directly for the current context
       fetchComments('')
         .then(data => {
           setComments(data);
@@ -219,17 +241,50 @@ export function useCommentPage() {
         })
         .finally(() => setTimeout(() => setIsLoading(false), 300));
     }
-  }, [filters, dashboard]);
+  }, [filters, dashboard, storyId]);
 
   /* ── Computed ─────────────────────────────────────────────── */
   const filterStr = buildFilterStr(filters) ?? 'DefaultContext';
   const wb_keysStr = buildFilterValuesStr(filters) ?? 'DefaultContext';
   const isValidSACSelection = true;
-  const isCommentVisible = (c: Comment) => {
-    if (!c.is_private) return true;
-    return formatDisplayName(c.user) === formatDisplayName(user || userEmail);
+
+  const isSameUser = (commentUser?: string) => {
+    if (!commentUser) return false;
+    const cUser = commentUser.toLowerCase().trim();
+    const cUserFormatted = formatDisplayName(commentUser).toLowerCase().trim();
+    const activeUser = (user || '').toLowerCase().trim();
+    const activeUserFormatted = formatDisplayName(user || '').toLowerCase().trim();
+    const activeEmail = (userEmail || '').toLowerCase().trim();
+    const activeId = (userId || '').toLowerCase().trim();
+
+    return (
+      (activeUser && (cUser === activeUser || cUserFormatted === activeUserFormatted)) ||
+      (activeId && (cUser === activeId || cUser.includes(activeId))) ||
+      (activeEmail && (cUser === activeEmail || cUser.includes(activeEmail.split('@')[0])))
+    );
   };
-  const filteredComments = comments.filter(isCommentVisible);
+
+  const isCommentForCurrentContext = (c: Comment) => {
+    // 1. Story matching: if we have an active storyId and the comment has a story property, match it
+    if (storyId && c.story && c.story !== storyId) {
+      return false;
+    }
+    // 2. Page / Dashboard matching: if we have a dashboard and the comment has a dashboard property (not common), match it
+    if (dashboard && c.dashboard && c.dashboard !== 'common') {
+      const normalizedCommentDash = c.dashboard.toLowerCase().replace(/[\s_-]+/g, '');
+      const normalizedCurrentDash = dashboard.toLowerCase().replace(/[\s_-]+/g, '');
+      if (normalizedCommentDash !== normalizedCurrentDash) {
+        return false;
+      }
+    }
+    // 3. Privacy matching:
+    if (c.is_private) {
+      return userRole === 'Admin' || isSameUser(c.user);
+    }
+    return true;
+  };
+
+  const filteredComments = comments.filter(isCommentForCurrentContext);
   const visibleComments = filteredComments.filter(c => c.level === level);
   const newCommentCount = filteredComments.filter(c => new Date(c.created_at?.value) > lastOpened).length;
 
@@ -241,15 +296,17 @@ export function useCommentPage() {
     }
 
     const existingComment = editingId ? comments.find(c => c.id === editingId) : null;
+    const author = user || userEmail || (userId ? `User_${userId}` : 'Anonymous');
 
     const payload: Comment = {
       id: editingId ?? uid(),
-      user: existingComment ? existingComment.user : (user || userEmail || 'Anonymous'),
+      user: existingComment ? existingComment.user : author,
       content: editorHtml,
       level,
       filter: filterStr,
       wb_keys: wb_keysStr,
-      dashboard: dashboard || 'LandingPage',
+      dashboard: dashboard || 'common',
+      story: storyId || '',
       created_at: existingComment?.created_at ?? { value: new Date().toISOString() },
       is_private: isPrivate,
     };
@@ -380,7 +437,7 @@ export function useCommentPage() {
     drawerOpen, setDrawerOpen, summaryText, sumLoading,
     aiMode, aiHtml, aiLoading,
     visibleComments, newCommentCount,
-    userEmail, userRole,
+    userEmail, userRole, userId, setUserId, isSameUser,
     isPrivate, setIsPrivate, handlePublishPrivate, isValidSACSelection,
     lockDate, setLockDate, allowPrivateConfig, setAllowPrivateConfig,
     notifyEmail, setNotifyEmail, defaultLevelConfig, setDefaultLevelConfig,
@@ -388,6 +445,7 @@ export function useCommentPage() {
     handleSave, handleEdit, handleDelete, resetPost,
     openSummary, handleAiRewrite, acceptAllAi, addToast,
     handleTestFilter, handleClearRowFilters,
+    storyId, setStoryId, dashboard, setDashboard,
     lockedCommentIds, toggleLockComment,
   };
 }
