@@ -88,7 +88,7 @@ export default function CommentPage() {
             <IcoChat /><h1 className="cp-title">SAC Comments</h1>
           </div>
           <div className="cp-header-role">
-            <span className="cp-user-email">{userEmail || user || (userId ? `ID: ${userId}` : 'No User Email')}</span>
+            <span className="cp-user-email">{userEmail || user || (userId ? `ID: ${userId}` : 'guest.user@datalinksoftware.com')}</span>
             <span className="cp-role-badge-static">
               {userRole ? `Role: ${userRole}` : 'Checking Role...'}
             </span>

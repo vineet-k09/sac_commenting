@@ -55,7 +55,10 @@ export function useCommentPage() {
         }
       })
       .catch(() => {
-        // No authenticated GCP session; identity will be populated dynamically from SAC postMessage
+        const fallbackEmail = 'guest.user@datalinksoftware.com';
+        setUserEmail(prev => prev || fallbackEmail);
+        setUser(prev => prev || fallbackEmail);
+        setUserRole('Viewer');
       });
   }, []);
 
