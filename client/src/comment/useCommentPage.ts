@@ -265,8 +265,8 @@ export function useCommentPage() {
   
   // Requirement 7: In dev mode, allow posting outside SAC dashboard. In prod, require valid SAC dimension context.
   const isValidSACSelection = isDev
-    ? true
-    : Object.keys(filters).filter(k => k !== 'Dashboard' && k !== 'Page').length > 0;
+    ? Object.keys(filters).filter(k => k !== 'Dashboard' && k !== 'Page').length > 0
+    : true;
 
   const isSameUser = (commentUser?: string) => {
     if (!commentUser) return false;
