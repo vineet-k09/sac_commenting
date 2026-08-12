@@ -4,7 +4,8 @@ const API_BASE = '/api';
 const CACHE_KEY = (filter: string) => `c_${filter}`;
 
 export async function fetchComments(filterStr: string): Promise<Comment[]> {
-  const params = new URLSearchParams({ filter: filterStr });
+  const params = new URLSearchParams();
+  if (filterStr) params.append('filter', filterStr);
   try {
     const res = await fetch(`${API_BASE}/comment?${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -14,6 +15,16 @@ export async function fetchComments(filterStr: string): Promise<Comment[]> {
   } catch {
     const cached = localStorage.getItem(CACHE_KEY(filterStr));
     return cached ? (JSON.parse(cached) as Comment[]) : [];
+  }
+}
+
+export async function fetchAppConfig(): Promise<{ isDev: boolean; env: string }> {
+  try {
+    const res = await fetch(`${API_BASE}/config`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch {
+    return { isDev: true, env: 'development' };
   }
 }
 
@@ -78,7 +89,7 @@ export function buildFilterValuesStr(filters: Record<string, string>): string | 
   return keys.length ? keys.map(k => filters[k]).join(';') : null;
 }
 
-export async function fetchCurrentUserEmail(): Promise<{ email: string; role?: UserRole | null; success?: boolean }> {
+export async function fetchCurrentUserEmail(): Promise<{ email: string; role?: UserRole | null; success: boolean }> {
   try {
     const res = await fetch(`${API_BASE}/me`, {
       method: 'POST',
@@ -86,14 +97,17 @@ export async function fetchCurrentUserEmail(): Promise<{ email: string; role?: U
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return { 
-      email: data.email, 
-      role: data.role as UserRole, 
-      success: true 
-    };
+    if (data.email && data.success) {
+      return { 
+        email: data.email, 
+        role: data.role as UserRole, 
+        success: true 
+      };
+    }
+    return { email: '', role: null, success: false };
   } catch (err) {
     console.error("Failed to fetch user:", err);
-    return { email: 'guest.user@datalinksoftware.com', role: 'Viewer', success: false };
+    return { email: '', role: null, success: false };
   }
 }
 

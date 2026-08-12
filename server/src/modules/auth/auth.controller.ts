@@ -1,18 +1,35 @@
 import { Request, Response } from "express";
 import { getUserRole as getRole, saveUserRole as setRole } from "./auth.repo";
 
+export async function getAppConfig(req: Request, res: Response) {
+    const isDev = process.env.NODE_ENV !== 'production';
+    res.status(200).json({
+        isDev,
+        env: process.env.NODE_ENV || 'development'
+    });
+}
+
 export async function getUser(req: Request, res: Response) {
     try {
-        // req.body.username is set by gcpAuthMiddleware from 'x-goog-authenticated-user-email'
-        const email = req.body?.username || 'guest.user@datalinksoftware.com';
-        const role = await getRole(email);
-        
-        const result = {
-            email,
-            role,
-            success: true
+        const gcpHeader = req.headers['x-goog-authenticated-user-email'] as string;
+        const rawEmail = req.body?.username || req.body?.email || (typeof req.query?.email === 'string' ? req.query.email : undefined) || (gcpHeader ? gcpHeader.split(':').pop() : undefined);
+
+        if (rawEmail && typeof rawEmail === 'string' && rawEmail.trim() !== '') {
+            const email = rawEmail.trim().toLowerCase();
+            const role = await getRole(email);
+            return res.status(200).json({
+                email,
+                role,
+                success: true
+            });
         }
-        res.status(200).json(result);
+
+        // Strict authentication policy: NO mock/fake fallback emails!
+        res.status(200).json({
+            email: '',
+            role: null,
+            success: false
+        });
     } catch (error: any) {
         console.error("Error getting user:", error);
         res.status(500).json({ error: "Failed to get user info" });

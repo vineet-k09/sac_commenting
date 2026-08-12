@@ -88,9 +88,9 @@ export default function CommentPage() {
             <IcoChat /><h1 className="cp-title">SAC Comments</h1>
           </div>
           <div className="cp-header-role">
-            <span className="cp-user-email">{isUserLoading ? 'Loading user...' : (userEmail || 'No User Email')}</span>
+            <span className="cp-user-email">{isUserLoading ? 'Loading user...' : (userEmail ? formatDisplayName(userEmail) : 'Not Logged In')}</span>
             <span className="cp-role-badge-static">
-              {userRole ? `Role: ${userRole}` : 'Checking Role...'}
+              {userRole ? `Role: ${userRole}` : 'No Access Role'}
             </span>
           </div>
         </div>
@@ -103,14 +103,11 @@ export default function CommentPage() {
           <span className="cp-tab-badge">{visibleComments.length}</span>
           {newCommentCount > 0 && <span className="cp-tab-dot" />}
         </button>
-        {userRole !== 'Viewer' && (
+        {userRole !== 'Viewer' && userEmail && (
           <button className={`cp-tab${activeTab === 'post' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('post')} id="tab-post">
             <IcoPen /> {editingId ? 'Editing' : 'Post'}
           </button>
         )}
-        {/* <button className={`cp-tab${activeTab === 'ai' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('ai')} id="tab-ai">
-          <IcoAI /> Ask AI
-        </button> */}
         {userRole === 'Admin' && (
           <button className={`cp-tab${activeTab === 'admin' ? ' cp-tab--active' : ''}`} onClick={() => setActiveTab('admin')} id="tab-admin">
             <IcoFilter /> Admin Config
@@ -129,12 +126,9 @@ export default function CommentPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button className="cp-test-btn" onClick={handleTestFilter} title="Send demo SAC filter string">Test SAC</button>
               <button className="cp-test-btn" onClick={handleClearRowFilters} title="Clear row filters but keep dashboard">Clear Rows</button>
-              {/* <button className="cp-summarise-btn" onClick={openSummary} id="btn-summarise"><IcoAI /> Summarise</button> */}
             </div>
           </div>
 
-          {/* Collapsible filter bar */}
-          {/* {level === 'page' && filterCount > 0 && ( */}
           {filterCount > 0 && (
             <>
               <div className="cp-filter-bar">
@@ -156,27 +150,6 @@ export default function CommentPage() {
             </>
           )}
 
-          {/* {level === 'row' && filterCount > 0 && (
-            <>
-              <div className="cp-filter-bar">
-                <div className="cp-filter-bar-summary"><IcoFilter /><span className="cp-filter-bar-label">{filterCount} filter{filterCount !== 1 ? 's' : ''} active</span></div>
-                <button className="cp-filter-toggle-btn" onClick={() => setFiltersExpanded(v => !v)} aria-expanded={filtersExpanded}>
-                  {filtersExpanded ? 'Hide' : 'Show'} <IcoChevron open={filtersExpanded} />
-                </button>
-              </div>
-              {filtersExpanded && (
-                <div className="cp-filter-chip-list">
-                  {Object.entries(filters).map(([k, v]) => (
-                    <span key={k} className="cp-breadcrumb-chip">
-                      <span className="cp-breadcrumb-key">{k}:</span>
-                      <span className="cp-breadcrumb-val">{v}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </>
-          )} */}
-
           {/* Comment list */}
           <div className="cp-comments-list">
             {!isValidSACSelection ? (
@@ -192,7 +165,7 @@ export default function CommentPage() {
               <div className="cp-empty">
                 <div className="cp-empty-icon"><IcoChat /></div>
                 <p>No {level}-level comments yet.</p>
-                {userRole !== 'Viewer' && <button className="cp-link-btn" onClick={() => setActiveTab('post')}>Be the first to add one →</button>}
+                {userRole !== 'Viewer' && userEmail && <button className="cp-link-btn" onClick={() => setActiveTab('post')}>Be the first to add one →</button>}
               </div>
             ) : (
               groupByDate(visibleComments).map(({ label, items }) => (
@@ -227,7 +200,6 @@ export default function CommentPage() {
                               {c.is_private && (userRole === 'Admin' || formatDisplayName(c.user) === formatDisplayName(user)) && (
                                 <button className="cp-publish-btn" onClick={() => handlePublishPrivate(c)} title="Publish for wider audience">Publish</button>
                               )}
-                              {/* {c.level === 'row' && ( */}
                               {parseCommentFilter(c.filter).length > 0 &&(
                                 <button className="cp-icon-btn" onClick={() => toggleRowFilter(c.id)} title={hiddenRowFilters.has(c.id) ? "Show context filters" : "Hide context filters"}>
                                   {hiddenRowFilters.has(c.id) ? <IcoEyeOff /> : <IcoEye />}
@@ -245,7 +217,7 @@ export default function CommentPage() {
                                   </button>
                                 </>
                               )}
-                              {userRole !== 'Viewer' && (
+                              {userRole !== 'Viewer' && userEmail && (
                                 isLocked ? (
                                   userRole === 'Admin' && (
                                     <>
@@ -263,11 +235,8 @@ export default function CommentPage() {
                             </div>
                           </div>
 
-                          {/* Row-level: compact inline filter context */}
-                          {/* {c.level === 'row' && !hiddenRowFilters.has(c.id) && parseCommentFilter(c.filter).length > 0 && ( */}
                           {!hiddenRowFilters.has(c.id) && parseCommentFilter(c.filter).length > 0 && (
                             <div className="cp-row-ctx">
-                              {/* <IcoRow /> */}
                               {c.level === 'row' ? <IcoRow /> : <IcoPage />}
                               <div className="cp-row-filter-chips">
                                 {parseCommentFilter(c.filter).map(f => (
@@ -294,7 +263,12 @@ export default function CommentPage() {
       {/* ══ POST TAB ══ */}
       {activeTab === 'post' && (
         <div className="cp-panel">
-          {!isValidSACSelection ? (
+          {!userEmail && !user ? (
+            <div className="cp-invalid-selection-box">
+              <h3>Authentication Required</h3>
+              <p>Unable to identify user account. Please log in via GCP or SAC to post or edit comments.</p>
+            </div>
+          ) : !isValidSACSelection ? (
             <div className="cp-invalid-selection-box">
               <div className="cp-invalid-icon"><IcoFilter /></div>
               <h3>SAC Context Required</h3>
@@ -310,7 +284,7 @@ export default function CommentPage() {
             <>
               <div className="cp-field">
                 <label className="cp-label">Posting as</label>
-                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{isUserLoading ? 'Loading user email from backend...' : (user || userEmail || 'Waiting for user email...')}</span></div>
+                <div className="cp-user-badge"><IcoUser /><span style={{ fontWeight: 700 }}>{isUserLoading ? 'Loading user...' : (user || userEmail)}</span></div>
               </div>
               <div className="cp-field">
                 <label className="cp-label">Comment Level</label>
